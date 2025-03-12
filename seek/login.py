@@ -6,7 +6,7 @@ chrome_driver_path = "/usr/local/bin/chromedriver"
 def login_to_seek():
     service = Service(chrome_driver_path)
     driver = webdriver.Chrome(service=service)
-    driver.get("https://www.seek.com.au/login")
+    driver.get("https://seek.com.au/")
     input("🔑 Log in manually, then press Enter...")
 
 if __name__ == "__main__":
