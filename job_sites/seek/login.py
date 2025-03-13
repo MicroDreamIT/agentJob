@@ -1,3 +1,5 @@
+import subprocess
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -6,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import pickle
 import time
 from core.config import CHROME_DRIVER_PATH, SEEK_EMAIL
+from job_sites.seek import session
 
 COOKIE_FILE = "job_sites/seek/seek_cookies.pkl"
 
@@ -74,9 +77,12 @@ def login_to_seek():
     with open(COOKIE_FILE, "wb") as f:
         pickle.dump(cookies, f)
 
-    # print("✅ Seek login session saved!")
+    print("🔄 Loading session after login...")
+    session.load_seek_session()
+    print("✅ Seek login session saved!")
     # driver.quit()
 
 
 if __name__ == "__main__":
     login_to_seek()
+
