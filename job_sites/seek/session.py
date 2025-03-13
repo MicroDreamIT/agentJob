@@ -1,51 +1,51 @@
+import pickle
+import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-import pickle
-import os
-import time
+from selenium.webdriver.common.by import By
+from core.config import CHROME_DRIVER_PATH  # ✅ Import from config
 
-from job_sites.core.config import CHROME_DRIVER_PATH
-
-# Path to ChromeDriver
-chrome_driver_path = "/usr/local/bin/chromedriver"
-
-# Cookie file location
 COOKIE_FILE = "job_sites/seek/seek_cookies.pkl"
 
-
 def load_seek_session():
-    """Loads Seek session with saved cookies."""
+    """Loads Seek cookies and verifies if the session is still active."""
 
     service = Service(CHROME_DRIVER_PATH)
     driver = webdriver.Chrome(service=service)
 
-    # Open Seek
+    # Step 1: Open Seek homepage first
     driver.get("https://www.seek.com.au/")
+    time.sleep(3)
 
-    # Check if cookie file exists
-    if os.path.exists(COOKIE_FILE):
+    # Step 2: Load and apply saved cookies
+    try:
         with open(COOKIE_FILE, "rb") as f:
             cookies = pickle.load(f)
 
-        # Add cookies to browser
         for cookie in cookies:
-            driver.add_cookie(cookie)
+            if "seek.com.au" in cookie["domain"]:  # ✅ Apply only Seek cookies
+                driver.add_cookie(cookie)
 
-        print("✅ Session restored! Refreshing page...")
-        driver.refresh()  # Reload page with cookies applied
+        print("✅ Cookies loaded successfully!")
 
-        time.sleep(5)  # Give time to verify if logged in
+        # Step 3: Navigate to profile page to verify login
+        driver.get("https://www.seek.com.au/profile/me")
+        time.sleep(5)
 
-        if "Sign out" in driver.page_source:
-            print("✅ You are still logged in!")
+        # Step 4: Check if login was successful
+        if "Sign out" in driver.page_source or "My account" in driver.page_source:
+            print("✅ Successfully logged in!")
         else:
-            print("⚠️ Session might have expired, please log in again.")
+            print("⚠️ Login failed. Session may have expired.")
 
-    else:
+        return driver
+
+    except FileNotFoundError:
         print("⚠️ No saved session found. Run login.py first.")
-
-    driver.quit()
-
+        return None
 
 if __name__ == "__main__":
-    load_seek_session()
+    driver = load_seek_session()
+    if driver:
+        input("Press Enter to close browser...")
+        driver.quit()
