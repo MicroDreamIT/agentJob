@@ -29,4 +29,5 @@ pip-selfcheck.json
 .idea/*
 .idea/*/
 
-!/job_sites/seek/seek_cookies.pkl
+
+/job_sites/seek/seek_cookies.pkl
