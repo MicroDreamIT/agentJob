@@ -1,32 +1,35 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
 import time
 import pickle
+import os
 
 from job_sites.core.config import CHROME_DRIVER_PATH
 
+# Cookie file location
+COOKIE_FILE = "job_sites/seek/seek_cookies.pkl"
 
 
 def login_to_seek():
-    """Logs into Seek and saves session cookies using Selenium."""
+    """Manually log in and save session cookies."""
 
-    # Use Service() to initialize ChromeDriver correctly
     service = Service(CHROME_DRIVER_PATH)
-    driver = webdriver.Chrome(service=service)  # ✅ Fixed
+    driver = webdriver.Chrome(service=service)
 
     # Open Seek login page
-    driver.get("https://www.seek.com.au/sign-in")
+    driver.get("https://www.seek.com.au/")
 
     # Wait for manual login
     input("🔑 Log in manually, then press Enter...")
 
-    # Save session cookies
-    cookies = driver.get_cookies()
-    with open("job_sites/seek/seek_cookies.pkl", "wb") as f:
-        pickle.dump(cookies, f)
+    # Ensure directory exists
+    os.makedirs("job_sites/seek", exist_ok=True)
 
-    print("✅ Seek login session saved!")
+    # Save cookies
+    with open(COOKIE_FILE, "wb") as f:
+        pickle.dump(driver.get_cookies(), f)
+
+    print(f"✅ Seek login session saved at {COOKIE_FILE}!")
     driver.quit()
 
 
