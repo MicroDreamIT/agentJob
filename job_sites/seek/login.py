@@ -13,6 +13,42 @@ from job_sites.seek import session
 COOKIE_FILE = "job_sites/seek/seek_cookies.pkl"
 
 
+def search_jobs():
+    #click 'job search'
+    # type 'what' input
+    # select classicification
+    # click more options
+    #select last 7 days
+    # call open_jobs()
+    pass
+
+
+def open_job():
+    # before click check database matches job id
+    # if doesnt match, open link in a new tab
+    #if matches, then click the next job
+    #
+    # store job id, link, job site in database
+    # click 'quick apply'
+    # call apply_on_job
+    pass
+
+def apply_on_job():
+    # send job description and CV to openAI to generate cover letter
+    # get the cover letter
+    #click continue
+    # dynamically get the input and questions, to openAI to generate answers
+    #fill the inputs
+    # answer 'Which of the following statements best describes your right to work in Australia?' select -> I require sponsorship to work for a new employer (e.g. 482, 457)
+    #click 'continue'
+    # click submit application
+    # close the tab
+    # goto job board tab
+    # call open_job()
+    pass
+
+
+
 def login_to_seek():
     """Logs into Seek by navigating from homepage, entering email, and waiting for OTP."""
 
@@ -77,9 +113,11 @@ def login_to_seek():
     with open(COOKIE_FILE, "wb") as f:
         pickle.dump(cookies, f)
 
-    print("🔄 Loading session after login...")
-    session.load_seek_session()
-    print("✅ Seek login session saved!")
+    search_jobs()
+    open_job()
+    apply_on_job()
+    
+    
     # driver.quit()
 
 
