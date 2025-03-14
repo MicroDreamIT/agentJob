@@ -2,6 +2,7 @@ import subprocess
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -12,15 +13,28 @@ from job_sites.seek import session
 
 COOKIE_FILE = "job_sites/seek/seek_cookies.pkl"
 
+def scroll_to_element_and_click(driver, element):
+    actions = ActionChains(driver)
+    actions.move_to_element(element).perform()  # Scroll to the element
+    element.click()  # Then click
 
-def search_jobs():
+def search_jobs(driver, what="full-stack-developer", days=1):
+
     #click 'job search'
     # type 'what' input
     # select classicification
     # click more options
     #select last 7 days
     # call open_jobs()
-    pass
+    # Assumptions: 'driver' is already initialized and logged in if necessary
+
+    # Navigate to the Job Search page (if not already there)
+    assert days in {1, 3, 7, 14, 30}, f"Invalid value for days. Allowed values are {{1, 3, 7, 14, 30}}, got {days}"
+    base_url = "https://www.seek.com.au"
+    query = f"{what}-jobs?daterange={days}"
+    full_url = f"{base_url}/{query}"
+    driver.get(full_url)  # Adjust URL if different
+
 
 
 def open_job():
@@ -112,15 +126,16 @@ def login_to_seek():
     print("📝 Saved Cookies:", cookies)
     with open(COOKIE_FILE, "wb") as f:
         pickle.dump(cookies, f)
+    
+    
+    return driver
 
-    search_jobs()
-    open_job()
-    apply_on_job()
-    
-    
-    # driver.quit()
+
 
 
 if __name__ == "__main__":
-    login_to_seek()
+    driver = login_to_seek()
+    search_jobs(driver, "full-stack-developer", 3)
+    # open_job()
+    # apply_on_job()
 
