@@ -36,7 +36,6 @@ def search_jobs(driver, what="full-stack-developer", days=1):
     driver.get(full_url)  # Adjust URL if different
 
 
-
 def open_job():
     # before click check database matches job id
     # if doesnt match, open link in a new tab
