@@ -19,21 +19,11 @@ def scroll_to_element_and_click(driver, element):
     element.click()  # Then click
 
 def search_jobs(driver, what="full-stack-developer", days=1):
-
-    #click 'job search'
-    # type 'what' input
-    # select classicification
-    # click more options
-    #select last 7 days
-    # call open_jobs()
-    # Assumptions: 'driver' is already initialized and logged in if necessary
-
-    # Navigate to the Job Search page (if not already there)
     assert days in {1, 3, 7, 14, 30}, f"Invalid value for days. Allowed values are {{1, 3, 7, 14, 30}}, got {days}"
     base_url = "https://www.seek.com.au"
     query = f"{what}-jobs?daterange={days}"
     full_url = f"{base_url}/{query}"
-    driver.get(full_url)  # Adjust URL if different
+    driver.get(full_url)
 
 
 def open_job():
