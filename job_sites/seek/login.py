@@ -9,7 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 import pickle
 import time
 from core.config import CHROME_DRIVER_PATH, SEEK_EMAIL
-from job_sites.seek import session
+from core.database import create_connection, Job, close_connection
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 COOKIE_FILE = "job_sites/seek/seek_cookies.pkl"
 
@@ -24,6 +25,50 @@ def search_jobs(driver, what="full-stack-developer", days=1):
     query = f"{what}-jobs?daterange={days}"
     full_url = f"{base_url}/{query}"
     driver.get(full_url)
+    # Initialize pagination
+    page_number = 1
+
+    # Loop through pages
+    while True:
+        print(f"Scanning page {page_number}...")
+        # Wait for the search results to load
+        wait = WebDriverWait(driver, 10)
+        try:
+            job_list = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article[data-automation='jobListing']")))
+            for job in job_list:
+                job_id = job.get_attribute("data-job-id")
+                job_title = job.find_element(By.CSS_SELECTOR, "h1").text
+                job_link = job.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
+
+                # Check if job already exists in database
+                session = create_connection()
+                existing_job = session.query(Job).filter_by(provider_id=job_id).first()
+                if not existing_job:
+                    # Job not found in DB, add it
+                    new_job = Job(provider='SEEK', provider_id=job_id, title=job_title, link=job_link)
+                    session.add(new_job)
+                    session.commit()
+
+                    # If job not applied, open and apply
+                    if existing_job and existing_job.applied_on is None:
+                        open_job(job_link, driver)
+                    elif existing_job and existing_job.applied_on:
+                        print(f"Skipping already applied job: {existing_job.title}")
+                        continue  # Move to the next job in the list
+                close_connection(session)
+
+        except TimeoutException:
+            print("Timed out waiting for job listings to load.")
+            break
+
+        # Navigate to the next page
+        try:
+            next_button = driver.find_element(By.XPATH, "//a[@data-automation='page-next']")
+            next_button.click()
+            page_number += 1
+        except NoSuchElementException:
+            print("No more pages to scan.")
+            break
 
 
 def open_job():
