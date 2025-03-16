@@ -2,7 +2,10 @@ import os
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker  # Updated import here
 import datetime
+from .db_config import db_url
 
+engine = create_engine(db_url)
+Session = sessionmaker(bind=engine)
 # Use the new `declarative_base` location
 Base = declarative_base()
 
