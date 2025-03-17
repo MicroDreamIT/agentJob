@@ -19,37 +19,33 @@ def apply_on_job(driver, job_id):
         time.sleep(2)
 
         # Step 2: Explicitly wait for job details panel
-        wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']"))
-        )
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']")))
 
-        # Step 3: Explicitly wait for "Quick Apply" button
-        quick_apply_button = wait.until(EC.element_to_be_clickable((
-            By.CSS_SELECTOR, "a[data-automation='job-detail-apply']"
-        )))
+        # Step 2: Find and explicitly click Quick Apply using JavaScript to ensure event triggers
+        quick_apply_button = wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-automation='job-detail-apply']")))
 
         if 'quick apply' in quick_apply_button.text.lower():
-            quick_apply_button.click()
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", quick_apply_button)
+            driver.execute_script("arguments[0].click();", quick_apply_button)
 
-            # Wait explicitly for the new tab to open
-            wait.until(EC.number_of_windows_to_be(2))
+            # Explicitly wait for new tab to open
+            wait.until(EC.number_of_windows_to_be(20))
 
-            # Switch clearly to the newly opened tab
-            new_tab = [tab for tab in driver.window_handles if tab != original_window][0]
+            # Switch explicitly to new tab
+            new_tab = [tab for tab in driver.window_handles if tab != driver.current_window_handle][0]
             driver.switch_to.window(new_tab)
+
             print("✅ Quick Apply form opened successfully.")
 
-            # TODO: add your form filling logic here
+            # TODO: Form filling logic here
 
-            # Close the application tab after applying
             driver.close()
+            driver.switch_to.window(driver.window_handles[0])
 
-            # Switch back to original window
-            driver.switch_to.window(original_window)
-
-            return True  # This return is now correctly placed
+            return True
 
     except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
         print(f"⚠️ Quick Apply unavailable for job ID {job_id}: {e}")
 
-    return False  # This ensures function always returns a boolean
+    return False
