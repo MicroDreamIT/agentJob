@@ -4,6 +4,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 import time
 
+from job_sites.for_ai_process.get_the_job_description import get_the_job_description
+from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
+
+
 def apply_on_job(driver, job_id):
     original_window = driver.current_window_handle
     wait = WebDriverWait(driver, 15)
@@ -19,29 +23,31 @@ def apply_on_job(driver, job_id):
         time.sleep(2)
 
         # Step 2: Explicitly wait for job details panel
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']")))
+        wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']"))
+        )
 
-        # Step 2: Find and explicitly click Quick Apply using JavaScript to ensure event triggers
-        quick_apply_button = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-automation='job-detail-apply']")))
-
+        # Click the Quick Apply button explicitly via JavaScript
+        quick_apply_button = wait.until(EC.element_to_be_clickable(
+            (By.CSS_SELECTOR, "a[data-automation='job-detail-apply']"))
+        )
         if 'quick apply' in quick_apply_button.text.lower():
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", quick_apply_button)
             driver.execute_script("arguments[0].click();", quick_apply_button)
 
-            # Explicitly wait for new tab to open
-            wait.until(EC.number_of_windows_to_be(20))
+            # Crucial: Wait longer for the new tab to fully open
+            wait.until(EC.number_of_windows_to_be(2))
 
-            # Switch explicitly to new tab
-            new_tab = [tab for tab in driver.window_handles if tab != driver.current_window_handle][0]
+            # Switch to newly opened tab
+            new_tab = [tab for tab in driver.window_handles if tab != original_window][0]
             driver.switch_to.window(new_tab)
 
-            print("✅ Quick Apply form opened successfully.")
+            print(f"✅ Quick Apply form opened successfully for job {job_id}.")
 
-            # TODO: Form filling logic here
+            description = get_the_job_description()
+            cover_letter = process_cover_letter_openai(description)
 
             driver.close()
-            driver.switch_to.window(driver.window_handles[0])
+            driver.switch_to.window(original_window)
 
             return True
 
