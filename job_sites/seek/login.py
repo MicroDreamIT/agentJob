@@ -20,31 +20,6 @@ def scroll_to_element_and_click(driver, element):
     element.click()  # Then click
 
 
-def open_job():
-    # before click check database matches job id
-    # if doesnt match, open link in a new tab
-    #if matches, then click the next job
-    #
-    # store job id, link, job site in database
-    # click 'quick apply'
-    # call apply_on_job
-    pass
-
-def apply_on_job():
-    # send job description and CV to openAI to generate cover letter
-    # get the cover letter
-    #click continue
-    # dynamically get the input and questions, to openAI to generate answers
-    #fill the inputs
-    # answer 'Which of the following statements best describes your right to work in Australia?' select -> I require sponsorship to work for a new employer (e.g. 482, 457)
-    #click 'continue'
-    # click submit application
-    # close the tab
-    # goto job board tab
-    # call open_job()
-    pass
-
-
 
 def login_to_seek():
     """Logs into Seek by navigating from homepage, entering email, and waiting for OTP."""

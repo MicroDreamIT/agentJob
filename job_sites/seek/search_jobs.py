@@ -1,10 +1,9 @@
-from sqlite3 import IntegrityError
-
+from datetime import datetime
 from selenium.common import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-
+from apply_on_job import apply_on_job
 from core.database import Job, open_session, close_session
 
 
@@ -39,18 +38,22 @@ def process_job_listings(driver, session):
         job_link = job_title_link.get_attribute("href")
         process_job(session, job_id, job_title, job_link)
 
-def process_job(session, job_id, job_title, job_link):
-    try:
-        existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
-        if not existing_job:
-            new_job = Job(provider='SEEK', provider_id=job_id, title=job_title, link=job_link)
-            session.add(new_job)
+def process_job(session, driver, job_id, job_title, job_link):
+    existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
+    if not existing_job:
+        new_job = Job(provider='SEEK', provider_id=job_id, title=job_title, link=job_link)
+        session.add(new_job)
+        session.commit()
+        existing_job = new_job
+        print(f"Added new job: {job_title}")
+
+    if existing_job.applied_on is None:
+        application_status = apply_on_job(driver, job_link)
+        if application_status in ('quick_apply', 'external_apply'):
+            existing_job.applied_on = datetime.utcnow()
             session.commit()
-        else:
-            print(f"Job {job_title} already in database.")
-    except IntegrityError:
-        session.rollback()
-        print(f"A job with provider SEEK and provider_id {job_id} already exists.")
+    else:
+        print(f"Job '{existing_job.title}' already processed.")
 
 def has_next_page(driver):
     try:
