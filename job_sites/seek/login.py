@@ -1,5 +1,4 @@
-import subprocess
-
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
@@ -51,7 +50,10 @@ def search_jobs(driver, what="full-stack-developer", days=1):
 
                     # If job not applied, open and apply
                     if existing_job and existing_job.applied_on is None:
-                        open_job(job_link, driver)
+                        apply_success = open_job(job_link, driver)
+                        if apply_success:
+                            existing_job.applied_on = datetime.datetime.utcnow()
+                            session.commit()
                     elif existing_job and existing_job.applied_on:
                         print(f"Skipping already applied job: {existing_job.title}")
                         continue  # Move to the next job in the list
