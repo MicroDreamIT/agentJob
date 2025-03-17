@@ -3,7 +3,7 @@ from selenium.common import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from apply_on_job import apply_on_job
+from .apply_on_job import apply_on_job
 from core.database import Job, open_session, close_session
 
 
@@ -36,7 +36,7 @@ def process_job_listings(driver, session):
         job_title_link = job.find_element(By.CSS_SELECTOR, "a[data-automation='jobTitle']")
         job_title = job_title_link.text
         job_link = job_title_link.get_attribute("href")
-        process_job(session, job_id, job_title, job_link)
+        process_job(session, driver, job_id, job_title, job_link)
 
 def process_job(session, driver, job_id, job_title, job_link):
     existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
