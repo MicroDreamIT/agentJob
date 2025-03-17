@@ -48,7 +48,7 @@ def process_job(session, driver, job_id, job_title, job_link):
             provider_id=job_id,
             title=job_title,
             link=job_link,
-            quick_apply=(application_status == 'quick_apply')
+            is_quick_apply=(application_status == 'quick_apply')
         )
 
         if application_status in ['quick_apply', 'external_apply']:
@@ -56,7 +56,7 @@ def process_job(session, driver, job_id, job_title, job_link):
 
         session.add(new_job)
         session.commit()
-        print(f"Processed new job: {job_title}, Quick Apply: {new_job.quick_apply}")
+        print(f"Processed new job: {job_title}, Quick Apply: {new_job.is_quick_apply}")
     else:
         print(f"Job '{existing_job.title}' already processed.")
 

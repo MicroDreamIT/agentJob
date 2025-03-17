@@ -5,6 +5,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Retrieve the DATABASE_URL from the environment variable or use a default value
-db_url = os.getenv('DATABASE_URL', 'sqlite:///data/jobs.db')
+db_url = os.getenv('DATABASE_URL')
 
 # This URL will be used elsewhere in your project to connect to the database

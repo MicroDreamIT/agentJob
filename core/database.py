@@ -1,7 +1,7 @@
 import os
+import datetime
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, UniqueConstraint, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker  # Updated import here
-import datetime
 from .db_config import db_url
 
 engine = create_engine(db_url)
@@ -14,16 +14,16 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_path = os.path.join(BASE_DIR, 'data', 'jobs.db')  # Ensure the 'data' directory exists or is created
 if not os.path.exists(os.path.join(BASE_DIR, 'data')):
     os.makedirs(os.path.join(BASE_DIR, 'data'))  # Create 'data' directory if it does not exist
-db_url = f"sqlite:///{db_path}"
+db_url = db_url
 
 class Job(Base):
     __tablename__ = 'jobs'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    provider = Column(String)
-    provider_id = Column(Integer, unique=True)
+    provider = Column(String, nullable=False)
+    provider_id = Column(Integer, nullable=False)
     title = Column(String)
     link = Column(String)
-    quick_apply = Column(Boolean, default=False)
+    is_quick_apply = Column(Boolean, default=False, nullable=False)
     applied_on = Column(DateTime, default=None)  # Applied is now a DateTime, defaults to None
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 

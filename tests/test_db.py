@@ -10,8 +10,8 @@ def test_store_job():
         provider_id=123456,
         title='Test Job',
         link='https://example.com/test-job',
-        quick_apply=True,
-        applied_on=datetime.datetime.utcnow()
+        is_quick_apply=True,
+        applied_on=datetime.datetime.utcnow(),
     )
 
     # Store job in database
