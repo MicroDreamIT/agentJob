@@ -33,11 +33,21 @@ def search_jobs(driver, what="full-stack-developer", days=1):
         # Wait for the search results to load
         wait = WebDriverWait(driver, 20)
         try:
-            job_list = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article[data-automation='normalJob']")))
+            job_list = wait.until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article[data-automation='normalJob']")))
+
             for job in job_list:
+                # Retrieve the job ID from the article element's data-job-id attribute
                 job_id = job.get_attribute("data-job-id")
-                job_title = job.find_element(By.CSS_SELECTOR, "h1").text
-                job_link = job.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
+
+                # Find the anchor tag that contains the job title. Adjust the selector to target the element containing the job title text
+                job_title_link = job.find_element(By.CSS_SELECTOR, "a[data-automation='jobTitle']")
+                job_title = job_title_link.text
+
+                # Get the href attribute from the job title link to capture the job link
+                job_link = job_title_link.get_attribute("href")
+
+                print(f"Job ID: {job_id}, Job Title: {job_title}, Job Link: {job_link}")
 
                 # Check if job already exists in database
                 session = create_connection()
@@ -65,7 +75,8 @@ def search_jobs(driver, what="full-stack-developer", days=1):
 
         # Navigate to the next page
         try:
-            next_button = driver.find_element(By.XPATH, "//a[@data-automation='page-next']")
+            # Use the correct attribute for the "Next" button based on the provided HTML
+            next_button = driver.find_element(By.XPATH, "//a[@aria-label='Next']")
             next_button.click()
             page_number += 1
         except NoSuchElementException:
