@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, UniqueConstraint
 from sqlalchemy.orm import declarative_base, sessionmaker  # Updated import here
 import datetime
 from .db_config import db_url
@@ -26,6 +26,8 @@ class Job(Base):
     applied_on = Column(DateTime, default=None)  # Applied is now a DateTime, defaults to None
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+    __table_args__ = (UniqueConstraint('provider', 'provider_id', name='_provider_provider_id_uc'),)
+
 def create_connection():
     """Create a database connection and return the session."""
     engine = create_engine(db_url, echo=True)  # Use the db_url that includes the path
@@ -35,4 +37,11 @@ def create_connection():
 
 def close_connection(session):
     """Close the session."""
+    session.close()
+
+def open_session():
+    Session = sessionmaker(bind=create_engine(db_url))
+    return Session()
+
+def close_session(session):
     session.close()

@@ -1,4 +1,5 @@
 from datetime import datetime
+from sqlite3 import IntegrityError
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
@@ -17,71 +18,6 @@ def scroll_to_element_and_click(driver, element):
     actions = ActionChains(driver)
     actions.move_to_element(element).perform()  # Scroll to the element
     element.click()  # Then click
-
-def search_jobs(driver, what="full-stack-developer", days=1):
-    assert days in {1, 3, 7, 14, 30}, f"Invalid value for days. Allowed values are {{1, 3, 7, 14, 30}}, got {days}"
-    base_url = "https://www.seek.com.au"
-    query = f"{what}-jobs?daterange={days}"
-    full_url = f"{base_url}/{query}"
-    driver.get(full_url)
-    # Initialize pagination
-    page_number = 1
-
-    # Loop through pages
-    while True:
-        print(f"Scanning page {page_number}...")
-        # Wait for the search results to load
-        wait = WebDriverWait(driver, 20)
-        try:
-            job_list = wait.until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article[data-automation='normalJob']")))
-
-            for job in job_list:
-                # Retrieve the job ID from the article element's data-job-id attribute
-                job_id = job.get_attribute("data-job-id")
-
-                # Find the anchor tag that contains the job title. Adjust the selector to target the element containing the job title text
-                job_title_link = job.find_element(By.CSS_SELECTOR, "a[data-automation='jobTitle']")
-                job_title = job_title_link.text
-
-                # Get the href attribute from the job title link to capture the job link
-                job_link = job_title_link.get_attribute("href")
-
-                print(f"Job ID: {job_id}, Job Title: {job_title}, Job Link: {job_link}")
-
-                # Check if job already exists in database
-                session = create_connection()
-                existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
-                if not existing_job:
-                    # Job not found in DB, add it
-                    new_job = Job(provider='SEEK', provider_id=job_id, title=job_title, link=job_link)
-                    session.add(new_job)
-                    session.commit()
-
-                    # If job not applied, open and apply
-                    if existing_job and existing_job.applied_on is None:
-                        apply_success = open_job(job_link, driver)
-                        if apply_success:
-                            existing_job.applied_on = datetime.datetime.utcnow()
-                            session.commit()
-                    elif existing_job and existing_job.applied_on:
-                        print(f"Skipping already applied job: {existing_job.title}")
-                        continue  # Move to the next job in the list
-                close_connection(session)
-
-        except TimeoutException:
-            print("Timed out waiting for job listings to load.")
-            break
-
-        # Navigate to the next page
-        try:
-            # Use the correct attribute for the "Next" button based on the provided HTML
-            next_button = driver.find_element(By.XPATH, "//a[@aria-label='Next']")
-            next_button.click()
-            page_number += 1
-        except NoSuchElementException:
-            print("No more pages to scan.")
-            break
 
 
 def open_job():
@@ -176,13 +112,4 @@ def login_to_seek():
     
     
     return driver
-
-
-
-
-if __name__ == "__main__":
-    driver = login_to_seek()
-    search_jobs(driver, "full-stack-developer", 3)
-    # open_job()
-    # apply_on_job()
 
