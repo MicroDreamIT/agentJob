@@ -31,4 +31,5 @@ pip-selfcheck.json
 
 
 /job_sites/seek/seek_cookies.pkl
-!/alembic/versions/
+/alembic/versions/
+/alembic/versions/*

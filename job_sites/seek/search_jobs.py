@@ -52,7 +52,7 @@ def process_job(session, driver, job_id, job_title, job_link):
         )
 
         if application_status in ['quick_apply', 'external_apply']:
-            new_job.applied_on = datetime.datetime.utcnow()
+            new_job.applied_on = datetime.utcnow()
 
         session.add(new_job)
         session.commit()
