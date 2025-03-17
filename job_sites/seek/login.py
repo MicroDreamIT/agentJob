@@ -31,9 +31,9 @@ def search_jobs(driver, what="full-stack-developer", days=1):
     while True:
         print(f"Scanning page {page_number}...")
         # Wait for the search results to load
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 20)
         try:
-            job_list = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article[data-automation='jobListing']")))
+            job_list = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article[data-automation='normalJob']")))
             for job in job_list:
                 job_id = job.get_attribute("data-job-id")
                 job_title = job.find_element(By.CSS_SELECTOR, "h1").text
@@ -41,7 +41,7 @@ def search_jobs(driver, what="full-stack-developer", days=1):
 
                 # Check if job already exists in database
                 session = create_connection()
-                existing_job = session.query(Job).filter_by(provider_id=job_id).first()
+                existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
                 if not existing_job:
                     # Job not found in DB, add it
                     new_job = Job(provider='SEEK', provider_id=job_id, title=job_title, link=job_link)
