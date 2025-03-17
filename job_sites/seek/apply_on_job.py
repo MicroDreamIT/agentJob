@@ -1,46 +1,55 @@
-from selenium.common import NoSuchElementException, TimeoutException, StaleElementReferenceException
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+import time
 
 def apply_on_job(driver, job_id):
     original_window = driver.current_window_handle
     wait = WebDriverWait(driver, 15)
 
     try:
-        # 1. Click the job listing explicitly with JS
-        job_card_selector = f"article[data-job-id='{job_id}']"
-        job_card = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, job_card_selector)))
+        # Step 1: Precisely click the job title in the left-side panel
+        job_title_selector = f"article[data-job-id='{job_id}'] a[data-automation='jobTitle']"
+        job_title_link = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, job_title_selector)))
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", job_title_link)
+        driver.execute_script("arguments[0].click();", job_title_link)
 
-        # Scroll precisely to the element and reliably click via JavaScript
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", job_card)
-        driver.execute_script("arguments[0].click();", job_card)
+        # Wait briefly to ensure DOM updates
+        time.sleep(2)
 
-        # 2. Wait explicitly for job detail panel to load
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']")))
+        # Step 2: Explicitly wait for job details panel
+        wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']"))
+        )
 
-        # 2. Find the Quick Apply button
-        quick_apply_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a[data-automation='job-detail-apply']")))
+        # Step 3: Explicitly wait for "Quick Apply" button
+        quick_apply_button = wait.until(EC.element_to_be_clickable((
+            By.CSS_SELECTOR, "a[data-automation='job-detail-apply']"
+        )))
 
         if 'quick apply' in quick_apply_button.text.lower():
             quick_apply_button.click()
 
-            # Wait explicitly for new tab to open
+            # Wait explicitly for the new tab to open
             wait.until(EC.number_of_windows_to_be(2))
 
-            # Switch to new tab
-            new_window = [w for w in driver.window_handles if w != driver.current_window_handle][0]
-            driver.switch_to.window(new_window)
+            # Switch clearly to the newly opened tab
+            new_tab = [tab for tab in driver.window_handles if tab != original_window][0]
+            driver.switch_to.window(new_tab)
+            print("✅ Quick Apply form opened successfully.")
 
-            print("✅ Quick Apply form opened.")
+            # TODO: add your form filling logic here
 
-            # TODO: Continue form filling
-
+            # Close the application tab after applying
             driver.close()
-            driver.switch_to.window(driver.window_handles[0])
 
-            return True
+            # Switch back to original window
+            driver.switch_to.window(original_window)
+
+            return True  # This return is now correctly placed
 
     except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
-        print(f"⚠️ Error applying: {e}")
-        return False
+        print(f"⚠️ Quick Apply unavailable for job ID {job_id}: {e}")
+
+    return False  # This ensures function always returns a boolean

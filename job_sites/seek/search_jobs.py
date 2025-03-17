@@ -38,27 +38,27 @@ def process_job_listings(driver, session):
         job_link = job_title_link.get_attribute("href")
         process_job(session, driver, job_id, job_title, job_link)
 
+
 def process_job(session, driver, job_id, job_title, job_link):
     existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
     if not existing_job:
-        application_status = apply_on_job(driver, job_link)
+        is_quick_apply_available = apply_on_job(driver, job_id)
 
         new_job = Job(
             provider='SEEK',
             provider_id=job_id,
             title=job_title,
             link=job_link,
-            is_quick_apply=(application_status == 'quick_apply')
+            is_quick_apply=is_quick_apply_available,
+            applied_on=datetime.utcnow()
         )
-
-        if application_status in ['quick_apply', 'external_apply']:
-            new_job.applied_on = datetime.utcnow()
-
         session.add(new_job)
         session.commit()
-        print(f"Processed new job: {job_title}, Quick Apply: {new_job.is_quick_apply}")
+
+        print(f"✅ Stored job: {job_title}, Quick Apply: {is_quick_apply_available}")
     else:
         print(f"Job '{existing_job.title}' already processed.")
+
 
 def has_next_page(driver):
     try:
