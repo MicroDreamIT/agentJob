@@ -41,17 +41,22 @@ def process_job_listings(driver, session):
 def process_job(session, driver, job_id, job_title, job_link):
     existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
     if not existing_job:
-        new_job = Job(provider='SEEK', provider_id=job_id, title=job_title, link=job_link)
+        application_status = apply_on_job(driver, job_link)
+
+        new_job = Job(
+            provider='SEEK',
+            provider_id=job_id,
+            title=job_title,
+            link=job_link,
+            quick_apply=(application_status == 'quick_apply')
+        )
+
+        if application_status in ['quick_apply', 'external_apply']:
+            new_job.applied_on = datetime.datetime.utcnow()
+
         session.add(new_job)
         session.commit()
-        existing_job = new_job
-        print(f"Added new job: {job_title}")
-
-    if existing_job.applied_on is None:
-        application_status = apply_on_job(driver, job_link)
-        if application_status in ('quick_apply', 'external_apply'):
-            existing_job.applied_on = datetime.utcnow()
-            session.commit()
+        print(f"Processed new job: {job_title}, Quick Apply: {new_job.quick_apply}")
     else:
         print(f"Job '{existing_job.title}' already processed.")
 
