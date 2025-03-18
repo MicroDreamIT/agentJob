@@ -7,39 +7,14 @@ import time
 from job_sites.for_ai_process.get_the_job_description import get_the_job_description
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 
-def extract_job_details(driver, wait):
+def extract_job_details(driver):
+    """Extract job details (Title, Company, Location, Salary, Description) in text format."""
     try:
-        job_details_element = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']"))
-        )
-
-        def safe_extract(selector, default="Not specified"):
-            try:
-                return job_details_element.find_element(By.CSS_SELECTOR, selector).text.strip()
-            except NoSuchElementException:
-                return default
-
         job_details_element = driver.find_element(By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']")
-
-        # Extract details
-        title = safe_extract(job_details_element, "h1[data-automation='job-detail-title']")
-        company = safe_extract(job_details_element, "span[data-automation='advertiser-name']")
-        location = safe_extract("span[data-automation='job-detail-location']")
-        salary = safe_extract(job_details_element, "span[data-automation='job-detail-salary']")
-        description = safe_extract("div[data-automation='jobAdDetails']")
-
-        job_text = (
-            f"Job Title: {title}\n"
-            f"Company: {company}\n"
-            f"Location: {location}\n"
-            f"Salary: {salary}\n\n"
-            f"Description:\n{description}"
-        )
-
+        job_text = job_details_element.text.strip()
         return job_text
-
-    except TimeoutException as e:
-        print(f"⚠️ Error extracting job details: {e}")
+    except NoSuchElementException:
+        print("⚠️ Job details not found.")
         return None
 
 def apply_on_job(driver, job_id):
@@ -54,10 +29,13 @@ def apply_on_job(driver, job_id):
         driver.execute_script("arguments[0].click();", job_title_link)
 
         # Wait briefly to ensure DOM updates
-        time.sleep(2)
+        time.sleep(5)
 
-        job_text = extract_job_details(driver, job_id)
+        job_text = extract_job_details(driver)
         print(job_text)  # Debug print, can remove in production
+
+        if job_text is None:
+            return False
 
         # Step 2: Explicitly wait for job details panel
         wait.until(
@@ -73,16 +51,31 @@ def apply_on_job(driver, job_id):
 
             # Crucial: Wait longer for the new tab to fully open
             wait.until(EC.number_of_windows_to_be(2))
+            time.sleep(5)
 
             # Switch to newly opened tab
             new_tab = [tab for tab in driver.window_handles if tab != original_window][0]
             driver.switch_to.window(new_tab)
 
-            print(f"✅ Quick Apply form opened successfully for job {job_id}.")
+            try:
+                apply_form = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "form"))
+                )
+                print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
+            except TimeoutException:
+                print(f"⚠️ Quick Apply form not detected for job {job_id}.")
+                driver.close()
+                driver.switch_to.window(original_window)
+                return False
 
-            description = get_the_job_description()
-            cover_letter = process_cover_letter_openai(description)
+            # ✅ **Fix: Give extra time before interacting with form**
+            time.sleep(3)
 
+            print("🚀 Ready to fill the application form...")
+
+            # Further automation: Filling inputs etc. (not implemented here)
+
+            # Closing tab only after proper processing
             driver.close()
             driver.switch_to.window(original_window)
 
