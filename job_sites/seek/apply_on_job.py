@@ -79,7 +79,7 @@ def apply_on_job(driver, job_id):
                         print("✅ Step 1 completed successfully!")
                     else:
                         print("⚠️ Step 1 failed! Check logs for errors.")
-                    # apply_step_2_employer_questions(driver)
+                    apply_step_2_employer_questions(driver)
 
                     print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
 
@@ -153,8 +153,10 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         print("📝 Selecting 'Write a Cover Letter' option...")
 
         cover_letter_radio = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "input[data-testid='coverLetter-method-change']"))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[data-testid='coverLetter-method-change']"))
         )
+        driver.execute_script("arguments[0].scrollIntoView();", cover_letter_radio)
+        time.sleep(1)  # Wait to ensure visibility
         driver.execute_script("arguments[0].click();", cover_letter_radio)
 
         print("✅ 'Write a Cover Letter' selected!")
