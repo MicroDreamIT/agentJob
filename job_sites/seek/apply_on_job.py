@@ -30,7 +30,7 @@ def extract_job_details(driver):
 def apply_on_job(driver, job_id):
     original_window = driver.current_window_handle
     wait = WebDriverWait(driver, 15)
-
+    cover_letter=''
     try:
         # Step 1: Precisely click the job title in the left-side panel
         job_title_selector = f"article[data-job-id='{job_id}'] a[data-automation='jobTitle']"
@@ -46,7 +46,7 @@ def apply_on_job(driver, job_id):
         print(cover_letter)  # Debug print, can remove in production
 
         if job_text is None:
-            return False
+            return [False, cover_letter]
 
         # Step 2: Explicitly wait for job details panel
         wait.until(
@@ -69,12 +69,10 @@ def apply_on_job(driver, job_id):
             driver.switch_to.window(new_tab)
 
             try:
-                apply_form = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "form"))
-                )
-
+                # Apply Step 1: Resume & Cover Letter
                 apply_step_1_resume_cover_letter(driver, cover_letter)
-                apply_step_2_employer_questions(driver)
+                print('step 1 done')
+                # apply_step_2_employer_questions(driver)
 
                 print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
 
@@ -102,7 +100,7 @@ def apply_on_job(driver, job_id):
     except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
         print(f"⚠️ Quick Apply unavailable for job ID {job_id}: {e}")
 
-    return False
+    return [False, cover_letter]
 
 
 def apply_step_1_resume_cover_letter(driver, cover_letter_text):
@@ -112,10 +110,6 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
     - Checks "Write a Cover Letter"
     - Pastes the cover letter
     - Clicks the "Continue" button
-
-    Parameters:
-        driver (WebDriver): Selenium WebDriver instance.
-        cover_letter_text (str): AI-generated cover letter.
     """
 
     wait = WebDriverWait(driver, 15)
@@ -125,11 +119,25 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         print("📄 Selecting resume...")
 
         resume_dropdown = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "select[data-testid='select-input']")))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "select[data-testid='select-input']"))
+        )
         resume_dropdown.click()
+        time.sleep(2)  # Wait to ensure dropdown expands
+
+        # Debugging: Print all options available
+        all_options = driver.find_elements(By.TAG_NAME, "option")
+        available_resumes = [opt.text for opt in all_options]
+        print(f"📝 Available resumes: {available_resumes}")
+
+        # Ensure the correct resume text exists
+        resume_text = "18/3/25 - Resume-sample.pdf"
+        if resume_text not in available_resumes:
+            print(f"⚠️ Resume '{resume_text}' not found! Check dropdown options.")
+            return False
 
         resume_option = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//option[contains(text(), '14/3/25 - ShahanurSharifGMCv.pdf')]")))
+            EC.element_to_be_clickable((By.XPATH, f"//option[contains(text(), '{resume_text}')]"))
+        )
         resume_option.click()
 
         print("✅ Resume selected!")
@@ -138,7 +146,8 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         print("📝 Selecting 'Write a Cover Letter' option...")
 
         cover_letter_radio = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "input[data-testid='coverLetter-method-change']")))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "input[data-testid='coverLetter-method-change']"))
+        )
         driver.execute_script("arguments[0].click();", cover_letter_radio)
 
         print("✅ 'Write a Cover Letter' selected!")
@@ -147,7 +156,8 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         print("✍️ Pasting cover letter...")
 
         cover_letter_textarea = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "textarea[data-testid='coverLetterTextInput']")))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "textarea[data-testid='coverLetterTextInput']"))
+        )
         cover_letter_textarea.clear()
         cover_letter_textarea.send_keys(cover_letter_text)
 
@@ -157,7 +167,11 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         print("🚀 Clicking 'Continue' button...")
 
         continue_button = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='continue-button']")))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='continue-button']"))
+        )
+
+        driver.execute_script("arguments[0].scrollIntoView();", continue_button)
+        time.sleep(1)  # Ensure smooth scrolling before clicking
         driver.execute_script("arguments[0].click();", continue_button)
 
         print("✅ Continue button clicked! Moving to next step...")
@@ -166,6 +180,8 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
 
     except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
         print(f"⚠️ Error in Step 1 (Resume & Cover Letter Selection): {e}")
+        print("🔎 Debug: Printing page source for troubleshooting...")
+        print(driver.page_source)  # Check for missing elements in the page
         return False
 
 
