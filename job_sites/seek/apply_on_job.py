@@ -64,25 +64,32 @@ def apply_on_job(driver, job_id):
             wait.until(EC.number_of_windows_to_be(2))
             time.sleep(5)
 
-            # Switch to newly opened tab
-            new_tab = [tab for tab in driver.window_handles if tab != original_window][0]
-            driver.switch_to.window(new_tab)
+            new_tab = None
+            for tab in driver.window_handles:
+                if tab != original_window:
+                    new_tab = tab
+                    break
+            if new_tab:
+                driver.switch_to.window(new_tab)
+                print("🔄 Switched to new job application tab.")
+                try:
+                    # Apply Step 1: Resume & Cover Letter
+                    success = apply_step_1_resume_cover_letter(driver, cover_letter)
+                    if success:
+                        print("✅ Step 1 completed successfully!")
+                    else:
+                        print("⚠️ Step 1 failed! Check logs for errors.")
+                    # apply_step_2_employer_questions(driver)
 
-            try:
-                # Apply Step 1: Resume & Cover Letter
-                apply_step_1_resume_cover_letter(driver, cover_letter)
-                print('step 1 done')
-                # apply_step_2_employer_questions(driver)
-
-                print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
+                    print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
 
 
 
-            except TimeoutException:
-                print(f"⚠️ Quick Apply form not detected for job {job_id}.")
-                driver.close()
-                driver.switch_to.window(original_window)
-                return [False, cover_letter]
+                except TimeoutException:
+                    print(f"⚠️ Quick Apply form not detected for job {job_id}.")
+                    driver.close()
+                    driver.switch_to.window(original_window)
+                    return [False, cover_letter]
 
             # ✅ **Fix: Give extra time before interacting with form**
             time.sleep(3)
