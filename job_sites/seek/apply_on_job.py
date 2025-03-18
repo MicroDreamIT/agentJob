@@ -7,6 +7,40 @@ import time
 from job_sites.for_ai_process.get_the_job_description import get_the_job_description
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 
+def extract_job_details(driver, wait):
+    try:
+        job_details_element = wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']"))
+        )
+
+        def safe_extract(selector, default="Not specified"):
+            try:
+                return job_details_element.find_element(By.CSS_SELECTOR, selector).text.strip()
+            except NoSuchElementException:
+                return default
+
+        job_details_element = driver.find_element(By.CSS_SELECTOR, "div[data-automation='jobDetailsPage']")
+
+        # Extract details
+        title = safe_extract(job_details_element, "h1[data-automation='job-detail-title']")
+        company = safe_extract(job_details_element, "span[data-automation='advertiser-name']")
+        location = safe_extract("span[data-automation='job-detail-location']")
+        salary = safe_extract(job_details_element, "span[data-automation='job-detail-salary']")
+        description = safe_extract("div[data-automation='jobAdDetails']")
+
+        job_text = (
+            f"Job Title: {title}\n"
+            f"Company: {company}\n"
+            f"Location: {location}\n"
+            f"Salary: {salary}\n\n"
+            f"Description:\n{description}"
+        )
+
+        return job_text
+
+    except TimeoutException as e:
+        print(f"⚠️ Error extracting job details: {e}")
+        return None
 
 def apply_on_job(driver, job_id):
     original_window = driver.current_window_handle
@@ -21,6 +55,9 @@ def apply_on_job(driver, job_id):
 
         # Wait briefly to ensure DOM updates
         time.sleep(2)
+
+        job_text = extract_job_details(driver, job_id)
+        print(job_text)  # Debug print, can remove in production
 
         # Step 2: Explicitly wait for job details panel
         wait.until(
