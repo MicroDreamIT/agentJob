@@ -3,8 +3,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 import time
-
-from job_sites.for_ai_process.get_the_job_description import get_the_job_description
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 
 def extract_job_details(driver):
@@ -32,7 +30,8 @@ def apply_on_job(driver, job_id):
         time.sleep(5)
 
         job_text = extract_job_details(driver)
-        print(job_text)  # Debug print, can remove in production
+        cover_letter = process_cover_letter_openai(job_text)
+        print(cover_letter)  # Debug print, can remove in production
 
         if job_text is None:
             return False
