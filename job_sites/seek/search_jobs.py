@@ -49,13 +49,13 @@ def process_job(session, driver, job_id, job_title, job_link):
             provider_id=job_id,
             title=job_title,
             link=job_link,
-            is_quick_apply=is_quick_apply_available,
+            is_quick_apply=is_quick_apply_available[0],
             applied_on=datetime.utcnow()
         )
         session.add(new_job)
         session.commit()
 
-        print(f"✅ Stored job: {job_title}, Quick Apply: {is_quick_apply_available}")
+        print(f"✅ Stored job: {job_title}, Quick Apply: {is_quick_apply_available[0]}")
     else:
         print(f"Job '{existing_job.title}' already processed.")
 

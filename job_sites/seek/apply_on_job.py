@@ -65,7 +65,7 @@ def apply_on_job(driver, job_id):
                 print(f"⚠️ Quick Apply form not detected for job {job_id}.")
                 driver.close()
                 driver.switch_to.window(original_window)
-                return False
+                return [False, cover_letter]
 
             # ✅ **Fix: Give extra time before interacting with form**
             time.sleep(3)
@@ -78,7 +78,7 @@ def apply_on_job(driver, job_id):
             driver.close()
             driver.switch_to.window(original_window)
 
-            return True
+            return [True, cover_letter]
 
     except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
         print(f"⚠️ Quick Apply unavailable for job ID {job_id}: {e}")
