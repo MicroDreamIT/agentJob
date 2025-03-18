@@ -61,6 +61,9 @@ def apply_on_job(driver, job_id):
                     EC.presence_of_element_located((By.CSS_SELECTOR, "form"))
                 )
                 print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
+
+                
+
             except TimeoutException:
                 print(f"⚠️ Quick Apply form not detected for job {job_id}.")
                 driver.close()

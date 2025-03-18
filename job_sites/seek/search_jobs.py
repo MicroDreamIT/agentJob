@@ -42,7 +42,9 @@ def process_job_listings(driver, session):
 def process_job(session, driver, job_id, job_title, job_link):
     existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
     if not existing_job:
-        is_quick_apply_available = apply_on_job(driver, job_id)
+        job_detail_returns = apply_on_job(driver, job_id)
+        is_quick_apply_available = job_detail_returns[0]
+        cover_letter = job_detail_returns[1]
 
         new_job = Job(
             provider='SEEK',

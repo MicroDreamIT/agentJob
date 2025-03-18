@@ -1,8 +1,6 @@
 import openai
 import os
 
-from core.config import OPENAI_API_KEY, CV_TEXT
-
 
 # ✅ Create OpenAI client instance
 client = openai.Client(api_key=os.getenv("OPENAI_API_KEY"))
