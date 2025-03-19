@@ -235,26 +235,35 @@ def apply_step_2_employer_questions(driver):
             # ✅ Locate the corresponding input field using the 'for' attribute
             input_field = driver.find_element(By.ID, question_id)
 
+            # ✅ Handle Dropdown (`<select>`)
             if input_field.tag_name == "select":
                 select = Select(input_field)
                 selected_option = select.first_selected_option.text.strip()
 
+                # **Skip if already selected**
                 if selected_option and selected_option.lower() != "select":
                     print(f"⏩ Skipping '{question_text}' (Already selected: {selected_option})")
                     continue
 
-                # ✅ Select the correct answer (fallback to closest match)
+                # ✅ Select the correct answer (fallback to best match)
                 try:
                     select.select_by_visible_text(answer)
                     print(f"✅ Selected '{answer}' for '{question_text}'")
                 except:
                     print(f"⚠️ Answer '{answer}' not found in dropdown. Trying best match.")
+                    best_match = None
                     for option in select.options:
                         if answer.lower() in option.text.lower():
-                            select.select_by_visible_text(option.text)
-                            print(f"✅ Selected best match: '{option.text}' for '{question_text}'")
+                            best_match = option.text
                             break
 
+                    if best_match:
+                        select.select_by_visible_text(best_match)
+                        print(f"✅ Selected best match: '{best_match}' for '{question_text}'")
+                    else:
+                        print(f"❌ No close match found for '{answer}' in dropdown.")
+
+            # ✅ Handle Textarea (`<textarea>`)
             elif input_field.tag_name == "textarea":
                 existing_value = input_field.get_attribute("value").strip()
                 if existing_value:
@@ -272,7 +281,6 @@ def apply_step_2_employer_questions(driver):
     driver.execute_script("arguments[0].click();", continue_button)
 
     print("✅ Employer Questions Completed!")
-
 def extract_questions_and_options(driver):
     """
     Extracts employer questions and available input options from the job application form.
