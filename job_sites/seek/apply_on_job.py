@@ -199,13 +199,10 @@ def apply_step_2_employer_questions(driver, cv_text):
     """
     Automates Step 2 of the job application process:
     - Detects all employer questions dynamically
+    - Skips pre-filled answers
     - Uses OpenAI to generate responses based on CV
     - Fills in answers in the correct fields
     - Clicks "Continue" to submit answers
-
-    Parameters:
-        driver (WebDriver): Selenium WebDriver instance.
-        cv_text (str): Extracted text from the CV.
     """
 
     wait = WebDriverWait(driver, 15)
@@ -256,11 +253,34 @@ def apply_step_2_employer_questions(driver, cv_text):
 
             print(f"🔍 Detected input type: {input_type}")
 
-            # **Step 2: Get Answer from OpenAI**
+            # **Step 2: Check if Input is Already Selected**
+            if input_type in ["text", "textarea"]:
+                existing_value = input_field.get_attribute("value").strip()
+                if existing_value:
+                    print(f"⏩ Skipping '{question_text}' (Already filled: {existing_value})")
+                    continue
+
+            elif input_type == "dropdown":
+                selected_option = Select(input_field).first_selected_option.text.strip()
+                if selected_option and selected_option.lower() != "select":
+                    print(f"⏩ Skipping '{question_text}' (Already selected: {selected_option})")
+                    continue
+
+            elif input_type == "radio":
+                if input_field.is_selected():
+                    print(f"⏩ Skipping '{question_text}' (Already selected)")
+                    continue
+
+            elif input_type == "checkbox":
+                if input_field.is_selected():
+                    print(f"⏩ Skipping '{question_text}' (Already checked)")
+                    continue
+
+            # **Step 3: Get Answer from OpenAI**
             openai_response = get_openai_answer(question_text, cv_text)
             print(f"🤖 AI Answer: {openai_response}")
 
-            # **Step 3: Fill in the Answer Correctly**
+            # **Step 4: Fill in the Answer Correctly**
             if input_type in ["text", "textarea"]:
                 input_field.clear()
                 input_field.send_keys(openai_response)
@@ -277,7 +297,7 @@ def apply_step_2_employer_questions(driver, cv_text):
                 if "yes" in openai_response.lower():
                     driver.execute_script("arguments[0].click();", input_field)  # Click checkbox
 
-        # **Step 4: Click "Continue"**
+        # **Step 5: Click "Continue"**
         print("🚀 Clicking 'Continue' button...")
         continue_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='continue-button']")))
         driver.execute_script("arguments[0].click();", continue_button)
@@ -288,6 +308,7 @@ def apply_step_2_employer_questions(driver, cv_text):
     except Exception as e:
         print(f"⚠️ Error in Step 2 (Employer Questions): {e}")
         return False
+
 
 def get_openai_answer(question, choices, cv_text):
     """
