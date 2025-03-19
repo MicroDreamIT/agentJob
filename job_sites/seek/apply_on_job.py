@@ -1,13 +1,13 @@
 import os
-
-import openai
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 import time
-from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
+import openai
+from difflib import get_close_matches
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support import expected_conditions as EC
+from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+
 
 client = openai.Client(api_key=os.getenv("OPENAI_API_KEY"))
 PREDEFINED_ANSWERS = {
@@ -79,6 +79,7 @@ def apply_on_job(driver, job_id):
                         print("✅ Step 1 completed successfully!")
                     else:
                         print("⚠️ Step 1 failed! Check logs for errors.")
+
                     apply_step_2_employer_questions(driver)
 
                     print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
@@ -194,6 +195,100 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         return False
 
 
+def apply_step_2_employer_questions(driver, cv_text):
+    """
+    Automates Step 2 of the job application process:
+    - Detects all employer questions dynamically
+    - Uses OpenAI to generate responses based on CV
+    - Fills in answers in the correct fields
+    - Clicks "Continue" to submit answers
+
+    Parameters:
+        driver (WebDriver): Selenium WebDriver instance.
+        cv_text (str): Extracted text from the CV.
+    """
+
+    wait = WebDriverWait(driver, 15)
+
+    try:
+        print("🔍 Detecting employer questions...")
+        questions = driver.find_elements(By.CSS_SELECTOR, "label")  # General way to find questions
+
+        if not questions:
+            print("⚠️ No employer questions found. Skipping Step 2.")
+            return True
+
+        for index, question_label in enumerate(questions):
+            question_text = question_label.text.strip()
+
+            if not question_text:
+                continue  # Skip empty labels
+
+            print(f"📝 Processing Question {index+1}: {question_text}")
+
+            # **Step 1: Identify the Input Type**
+            input_field = None
+            input_type = None
+
+            # Try finding input fields (text, radio, checkbox, select)
+            try:
+                input_field = question_label.find_element(By.XPATH, "following-sibling::input")
+                input_type = "text"
+            except:
+                try:
+                    input_field = question_label.find_element(By.XPATH, "following-sibling::textarea")
+                    input_type = "textarea"
+                except:
+                    try:
+                        input_field = question_label.find_element(By.XPATH, "following-sibling::select")
+                        input_type = "dropdown"
+                    except:
+                        try:
+                            input_field = question_label.find_element(By.XPATH, "following-sibling::div//input[@type='radio']")
+                            input_type = "radio"
+                        except:
+                            try:
+                                input_field = question_label.find_element(By.XPATH, "following-sibling::div//input[@type='checkbox']")
+                                input_type = "checkbox"
+                            except:
+                                print(f"⚠️ No matching input found for: {question_text}")
+                                continue
+
+            print(f"🔍 Detected input type: {input_type}")
+
+            # **Step 2: Get Answer from OpenAI**
+            openai_response = get_openai_answer(question_text, cv_text)
+            print(f"🤖 AI Answer: {openai_response}")
+
+            # **Step 3: Fill in the Answer Correctly**
+            if input_type in ["text", "textarea"]:
+                input_field.clear()
+                input_field.send_keys(openai_response)
+
+            elif input_type == "dropdown":
+                select = Select(input_field)
+                best_option = find_best_dropdown_option(select.options, openai_response)
+                select.select_by_visible_text(best_option)
+
+            elif input_type == "radio":
+                select_best_radio_option(driver, question_label, openai_response)
+
+            elif input_type == "checkbox":
+                if "yes" in openai_response.lower():
+                    driver.execute_script("arguments[0].click();", input_field)  # Click checkbox
+
+        # **Step 4: Click "Continue"**
+        print("🚀 Clicking 'Continue' button...")
+        continue_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='continue-button']")))
+        driver.execute_script("arguments[0].click();", continue_button)
+
+        print("✅ Employer Questions Completed!")
+        return True
+
+    except Exception as e:
+        print(f"⚠️ Error in Step 2 (Employer Questions): {e}")
+        return False
+
 def get_openai_answer(question, choices, cv_text):
     """
     Generates an answer for a given job application question using OpenAI.
@@ -236,127 +331,35 @@ def get_openai_answer(question, choices, cv_text):
         return "N/A"
 
 
-def apply_step_2_employer_questions(driver):
-    cv_text = os.getenv("CV_TEXT")
+def find_best_dropdown_option(options, ai_answer):
     """
-    Automates Step 2 of the job application process:
-    - Detects if the "Answer Employer Questions" step exists
-    - Dynamically fills out different form types (input, select, checkbox, radio, textarea)
-    - Uses OpenAI to answer technical questions based on CV
-    - Clicks "Continue" to proceed
+    Finds the best matching option in a dropdown.
+
+    Parameters:
+        options (list): List of dropdown options.
+        ai_answer (str): AI-generated answer.
+
+    Returns:
+        str: The closest matching option.
+    """
+    option_texts = [opt.text for opt in options]
+    best_match = get_close_matches(ai_answer, option_texts, n=1, cutoff=0.6)
+    return best_match[0] if best_match else option_texts[0]
+
+
+def select_best_radio_option(driver, question_label, ai_answer):
+    """
+    Selects the best radio button based on the AI answer.
 
     Parameters:
         driver (WebDriver): Selenium WebDriver instance.
-        cv_text (str): The text extracted from the user's CV.
-        keep in mind those predefined answers:
-        
-        predefined question answer:
-        Which of the following statements best describes your right to work in Australia?
-        dropdown -> I require sponsorship to work for a new employer (e.g. 482, 457)
-        
-        What's your expected annual base salary?
-        90k
+        question_label (WebElement): The label element of the question.
+        ai_answer (str): AI-generated answer.
     """
-    wait = WebDriverWait(driver, 15)
+    radio_buttons = question_label.find_elements(By.XPATH, "following-sibling::div//input[@type='radio']")
 
-    try:
-        # ✅ Step 1: Check if employer questions exist
-        print("🔍 Checking for employer questions...")
-        try:
-            employer_questions_section = wait.until(EC.presence_of_element_located((By.TAG_NAME, "form")))
-            print("✅ Employer questions found!")
-        except TimeoutException:
-            print("⚠️ No employer questions found. Skipping Step 2.")
-            return True
-
-        # ✅ Step 2: Find all question containers dynamically
-        question_containers = driver.find_elements(By.TAG_NAME, "label")
-
-        for question_label in question_containers:
-            try:
-                # Extract question text
-                question_text = question_label.text.strip()
-                if not question_text:
-                    continue
-
-                # Predefined answer check
-                answer = PREDEFINED_ANSWERS.get(question_text)
-
-                # If no predefined answer, use OpenAI
-                if not answer:
-                    answer = get_openai_answer(question_text, [], cv_text)
-
-                print(f"📝 Answering: {question_text} -> {answer}")
-
-                # ✅ Handle Input Fields (text, number, email)
-                try:
-                    input_field = question_label.find_element(By.XPATH, "following-sibling::input")
-                    input_type = input_field.get_attribute("type")
-
-                    if input_type in ["text", "number", "email"]:
-                        input_field.clear()
-                        input_field.send_keys(answer)
-                        print("✅ Answered using Input Field.")
-                        continue
-                except NoSuchElementException:
-                    pass
-
-                # ✅ Handle Textarea
-                try:
-                    textarea = question_label.find_element(By.XPATH, "following-sibling::textarea")
-                    textarea.clear()
-                    textarea.send_keys(answer)
-                    print("✅ Answered using Textarea.")
-                    continue
-                except NoSuchElementException:
-                    pass
-
-                # ✅ Handle Dropdown (Select)
-                try:
-                    select_element = question_label.find_element(By.XPATH, "following-sibling::select")
-                    select = Select(select_element)
-                    select.select_by_visible_text(answer)
-                    print("✅ Answered using Dropdown.")
-                    continue
-                except NoSuchElementException:
-                    pass
-
-                # ✅ Handle Radio Buttons
-                try:
-                    radio_buttons = question_label.find_elements(By.XPATH, "following-sibling::input[@type='radio']")
-                    for btn in radio_buttons:
-                        if btn.get_attribute("value") == answer:
-                            driver.execute_script("arguments[0].click();", btn)
-                            print("✅ Answered using Radio Button.")
-                            break
-                    continue
-                except NoSuchElementException:
-                    pass
-
-                # ✅ Handle Checkboxes
-                try:
-                    checkboxes = question_label.find_elements(By.XPATH, "following-sibling::input[@type='checkbox']")
-                    for box in checkboxes:
-                        if box.get_attribute("value") in answer:
-                            driver.execute_script("arguments[0].click();", box)
-                            print("✅ Answered using Checkbox.")
-                    continue
-                except NoSuchElementException:
-                    pass
-
-                print("⚠️ No suitable input method found for this question.")
-
-            except NoSuchElementException:
-                print("⚠️ Skipping an unrecognized question format.")
-
-        # ✅ Step 3: Click "Continue"
-        print("🚀 Clicking 'Continue' button to proceed...")
-        continue_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Continue')]")))
-        driver.execute_script("arguments[0].click();", continue_button)
-        print("✅ Step 2 Completed. Moving to next step...")
-
-        return True
-
-    except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
-        print(f"⚠️ Error in Step 2 (Employer Questions): {e}")
-        return False
+    for radio in radio_buttons:
+        label = radio.find_element(By.XPATH, "following-sibling::label").text.strip()
+        if ai_answer.lower() in label.lower():
+            driver.execute_script("arguments[0].click();", radio)
+            return
