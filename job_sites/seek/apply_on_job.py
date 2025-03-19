@@ -15,6 +15,7 @@ PREDEFINED_ANSWERS = {
         "I require sponsorship to work for a new employer (e.g. 482, 457)",
     "What's your expected annual base salary?": "$90k"
 }
+CV_TEXT = os.getenv("CV_TEXT")
 
 def extract_job_details(driver):
     """Extract job details (Title, Company, Location, Salary, Description) in text format."""
@@ -195,7 +196,7 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         return False
 
 
-def apply_step_2_employer_questions(driver, cv_text):
+def apply_step_2_employer_questions(driver):
     """
     Automates Step 2 of the job application process:
     - Detects all employer questions dynamically
@@ -277,7 +278,7 @@ def apply_step_2_employer_questions(driver, cv_text):
                     continue
 
             # **Step 3: Get Answer from OpenAI**
-            openai_response = get_openai_answer(question_text, cv_text)
+            openai_response = get_openai_answer(question_text)
             print(f"🤖 AI Answer: {openai_response}")
 
             # **Step 4: Fill in the Answer Correctly**
@@ -310,46 +311,37 @@ def apply_step_2_employer_questions(driver, cv_text):
         return False
 
 
-def get_openai_answer(question, choices, cv_text):
+def get_openai_answer(question):
     """
-    Generates an answer for a given job application question using OpenAI.
+    Uses OpenAI to generate the best answer based on the job question and CV.
 
     Parameters:
-        question (str): The employer question.
-        choices (list): Possible choices (for radio, select, checkbox).
-        cv_text (str): The CV text to reference.
+        question (str): The employer's question.
+        cv_text (str): The CV content.
 
     Returns:
-        str: The best-matching answer.
+        str: AI-generated answer.
     """
 
     prompt = f"""
-    Based on my CV:
+    You are a professional job application assistant. 
+    Based on the CV below, generate a professional and relevant response to the employer's question.
 
-    {cv_text}
+    Employer Question: "{question}"
 
-    Please provide a concise answer to the following employer question in a job application:
+    CV Content:
+    {CV_TEXT}
 
-    {question}
-
-    Choices: {', '.join(choices) if choices else 'N/A'}
-
-    Keep it professional and relevant. If multiple options apply, return a list of choices.
+    Answer:
     """
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an HR assistant helping to answer job application questions."},
-                {"role": "user", "content": prompt}],
-            temperature=0.5,
-            max_tokens=100
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"⚠️ OpenAI API Error: {e}")
-        return "N/A"
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": prompt}]
+    )
+
+    return response['choices'][0]['message']['content'].strip()
+
 
 
 def find_best_dropdown_option(options, ai_answer):
