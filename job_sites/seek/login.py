@@ -81,10 +81,8 @@ def login_to_seek():
 
     # Step 5: Save cookies after successful login
     cookies = driver.get_cookies()
-    print("📝 Saved Cookies:", cookies)
     with open(COOKIE_FILE, "wb") as f:
         pickle.dump(cookies, f)
-    
-    
+
     return driver
 

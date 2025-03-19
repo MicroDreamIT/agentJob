@@ -7,6 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+import re
 
 
 client = openai.Client(api_key=os.getenv("OPENAI_API_KEY"))
@@ -81,8 +82,8 @@ def apply_on_job(driver, job_id):
                     else:
                         print("⚠️ Step 1 failed! Check logs for errors.")
 
-                    automate_employer_questions(driver)
-                    # apply_step_2_employer_questions(driver)
+
+                    apply_step_2_employer_questions(driver)
 
                     print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
 
@@ -197,10 +198,8 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         return False
 
 
-import re
-from selenium.webdriver.support.ui import Select
 
-def apply_step_2_employer_questions(driver, cv_text):
+def apply_step_2_employer_questions(driver):
     """
     Automates Step 2 of the job application process:
     - Skips pre-filled answers
@@ -382,7 +381,7 @@ def get_openai_answer(question):
 
     Parameters:
         question (str): The employer's question.
-        cv_text (str): The CV content.
+        CV_TEXT (str): The CV content.
 
     Returns:
         str: AI-generated answer.
