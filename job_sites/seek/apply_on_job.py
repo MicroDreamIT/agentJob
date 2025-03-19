@@ -1,14 +1,14 @@
+import re
 import os
-import time
+import json
 import openai
+import time
 from difflib import get_close_matches
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
-import re
-
 
 client = openai.Client(api_key=os.getenv("OPENAI_API_KEY"))
 PREDEFINED_ANSWERS = {
@@ -201,18 +201,52 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
 
 def apply_step_2_employer_questions(driver):
     """
-    Automates Step 2 of the job application process:
-    - Skips pre-filled answers
-    - Uses pre-defined answers for known questions
-    - Uses OpenAI only for unknown questions
-    - Handles checkboxes dynamically
-    - Matches integer responses correctly
+    Extracts employer questions, sends them to OpenAI, and fills in answers dynamically.
     """
+
+    # Extract questions + options
+    questions = extract_questions_and_options(driver)
+
+    # Get AI-generated answers
+    answers = get_openai_answers(questions)["answers"]
+
+    for item in answers:
+        question_text = item["question"]
+        answer = item["answer"]
+
+        print(f"📝 Answering: {question_text} → {answer}")
+
+        try:
+            question_label = driver.find_element(By.XPATH, f"//label[contains(text(), '{question_text}')]")
+            input_field = question_label.find_element(By.XPATH, "following-sibling::*//input | following-sibling::*//select | following-sibling::*//textarea")
+
+            if input_field.tag_name == "select":
+                select = Select(input_field)
+                best_option = find_best_dropdown_option(select.options, answer)
+                select.select_by_visible_text(best_option)
+
+            elif input_field.tag_name == "input":
+                input_field.clear()
+                input_field.send_keys(answer)
+
+        except Exception as e:
+            print(f"⚠️ Error processing question: {question_text}: {e}")
+
+    # Click "Continue"
+    continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
+    driver.execute_script("arguments[0].click();", continue_button)
+
+    print("✅ Employer Questions Completed!")
+
+
+def get_openai_answers(questions):
+    """
+    Sends employer questions and answer options to OpenAI and returns structured answers.
+    """
+
     predefined_answers = {
-        "How many years' experience do you have as a full stack developer?": {
-            "dropdown": "More than 5 years", "text": "13 Years"},
-        "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "0-1 years",
-                                                                                 "text": "1 Year"},
+        "How many years' experience do you have as a full stack developer?": {"dropdown": "More than 5 years", "text": "13 Years"},
+        "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "0-1 years", "text": "1 Year"},
         "Which of the following statements best describes your right to work in Australia?": "Skip",
         "Do you have a current Australian driver's licence?": "No",
         "Do you own or have regular access to a car?": "Yes",
@@ -230,182 +264,101 @@ def apply_step_2_employer_questions(driver):
         "What are your salary expectations?": "$100k",
         "Do you have full working rights in Australia?": "No",
         "Will you require visa sponsorship either now or in the future?": "Yes",
-        "How many years of experience do you possess in a Software Developer or equivalent role?": "instruction: select the last one",
-        "Would you be interested in the Fixed Term Position (contract until 31 Dec 2025)?": "Yes",
-        "Do you have experience in programming languages C#/.Net or React?": "Yes",
-        "What are your salary expectations for the role?": "$100k",
-        "How many years' experience do you have as a Full Stack Software Engineer?": {
-            "dropdown": "More than 5 years", "text": "13 Years"},
-        "How many years' experience do you have working in an agile environment?": {
-            "dropdown": "More than 5 years", "text": "13 Years"},
     }
-    """
-    Automates Step 2 of the job application process:
-    - Uses predefined answers when available.
-    - Handles text, dropdown, checkboxes, and radio buttons dynamically.
-    - Uses OpenAI only when necessary.
-    - Skips pre-filled fields.
-    """
 
-    wait = WebDriverWait(driver, 15)
+    # Format the prompt for OpenAI
+    full_prompt = f"""
+    Based on my CV:
+
+    {os.getenv("CV_TEXT")}
+
+    And the following employer questions and options:
+
+    {json.dumps(questions, indent=2)}
+
+    Here are my predefined answers:
+
+    {json.dumps(predefined_answers, indent=2)}
+
+    Please return the best-matching answers in structured JSON format. If the predefined answer is slightly different from the dropdown/checkbox options, select the closest match.
+
+    Example output:
+    {{
+      "answers": [
+        {{"question": "How many years' experience do you have as a full stack developer?", "answer": "13 Years"}},
+        {{"question": "What is your expected salary?", "answer": "$100k"}},
+        {{"question": "Which of the following programming languages are you experienced in?", "answer": ["Python", "JavaScript", "C++"]}}
+      ]
+    }}
+    """
 
     try:
-        print("🔍 Detecting employer questions...")
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": "You are an AI assistant helping with job applications."},
+                      {"role": "user", "content": full_prompt}],
+            temperature=0.5,
+            max_tokens=1000
+        )
 
-        question_elements = driver.find_elements(By.CSS_SELECTOR, "label")
+        # 🔍 Debug: Print response structure
+        print(response)
 
-        if not question_elements:
-            print("⚠️ No employer questions found. Skipping Step 2.")
-            return True
+        # ✅ Correct way to access response content
+        return json.loads(response.choices[0].message.content)
 
-        for index, question_label in enumerate(question_elements):
+    except openai.OpenAIError as e:
+        print(f"⚠️ OpenAI API Error: {e}")
+        return {"answers": []}
+
+def extract_questions_and_options(driver):
+    """
+    Extracts employer questions and available input options from the job application form.
+    Returns a list of questions and their available answers.
+    """
+
+    print("🔍 Extracting employer questions...")
+
+    question_data = []
+    question_elements = driver.find_elements(By.CSS_SELECTOR, "label")
+
+    for question_label in question_elements:
+        try:
+            question_text = question_label.text.strip()
+            input_options = []
+
+            # **Handle Dropdowns**
             try:
-                question_text = question_label.text.strip()
+                dropdown = question_label.find_element(By.XPATH, "following-sibling::select")
+                options = dropdown.find_elements(By.TAG_NAME, "option")
+                input_options = [opt.text.strip() for opt in options]
+            except:
+                pass
 
-                if not question_text:
-                    continue  # Skip empty labels
+            # **Handle Radio Buttons**
+            try:
+                radio_buttons = question_label.find_elements(By.XPATH, "following-sibling::div//input[@type='radio']")
+                input_options = [radio.find_element(By.XPATH, "following-sibling::label").text.strip() for radio in radio_buttons]
+            except:
+                pass
 
-                print(f"📝 Processing Question {index + 1}: {question_text}")
+            # **Handle Checkboxes**
+            try:
+                checkboxes = question_label.find_elements(By.XPATH, "following-sibling::div//input[@type='checkbox']")
+                input_options = [checkbox.find_element(By.XPATH, "following-sibling::label").text.strip() for checkbox in checkboxes]
+            except:
+                pass
 
-                # **Step 1: Find Input Field Dynamically**
-                input_field = None
-                input_type = None
+            question_data.append({
+                "question": question_text,
+                "options": input_options
+            })
 
-                try:
-                    input_field = question_label.find_element(By.XPATH, "following-sibling::input")
-                    input_type = "text"
-                except:
-                    try:
-                        input_field = question_label.find_element(By.XPATH, "following-sibling::textarea")
-                        input_type = "textarea"
-                    except:
-                        try:
-                            input_field = question_label.find_element(By.XPATH, "following-sibling::select")
-                            input_type = "dropdown"
-                        except:
-                            try:
-                                input_field = question_label.find_element(By.XPATH,
-                                                                          "following-sibling::div//input[@type='radio']")
-                                input_type = "radio"
-                            except:
-                                try:
-                                    input_field = question_label.find_element(By.XPATH,
-                                                                              "following-sibling::div//input[@type='checkbox']")
-                                    input_type = "checkbox"
-                                except:
-                                    print(f"⚠️ No matching input found for: {question_text}")
-                                    continue
+        except Exception as e:
+            print(f"⚠️ Error extracting question: {e}")
+            continue
 
-                print(f"🔍 Detected input type: {input_type}")
-
-                # **Step 2: Skip Pre-Selected Inputs**
-                if input_type in ["text", "textarea"]:
-                    existing_value = input_field.get_attribute("value").strip()
-                    if existing_value:
-                        print(f"⏩ Skipping '{question_text}' (Already filled: {existing_value})")
-                        continue
-
-                elif input_type == "dropdown":
-                    selected_option = Select(input_field).first_selected_option.text.strip()
-                    if selected_option and selected_option.lower() != "select":
-                        print(f"⏩ Skipping '{question_text}' (Already selected: {selected_option})")
-                        continue
-
-                elif input_type == "radio":
-                    if input_field.is_selected():
-                        print(f"⏩ Skipping '{question_text}' (Already selected)")
-                        continue
-
-                elif input_type == "checkbox":
-                    if input_field.is_selected():
-                        print(f"⏩ Skipping '{question_text}' (Already checked)")
-                        continue
-
-                # **Step 3: Use Predefined Answers Instead of OpenAI**
-                if question_text in predefined_answers:
-                    ai_answer = predefined_answers[question_text]
-
-                    # Handle dropdown vs. text separately
-                    if isinstance(ai_answer, dict):
-                        if input_type == "dropdown":
-                            ai_answer = ai_answer["dropdown"]
-                        elif input_type in ["text", "textarea"]:
-                            ai_answer = ai_answer["text"]
-
-                    if ai_answer == "Skip":
-                        print(f"⏩ Skipping '{question_text}' (No need to answer)")
-                        continue
-                else:
-                    ai_answer = get_openai_answer(question_text)  # Fallback to AI for unknown questions
-
-                print(f"🤖 Answer: {ai_answer}")
-
-                # **Step 4: Fill in the Answer**
-                if input_type in ["text", "textarea"]:
-                    input_field.clear()
-                    input_field.send_keys(ai_answer)
-
-                elif input_type == "dropdown":
-                    select = Select(input_field)
-                    best_option = find_best_dropdown_option(select.options, ai_answer)
-                    select.select_by_visible_text(best_option)
-
-                elif input_type == "radio":
-                    select_best_radio_option(driver, question_label, ai_answer)
-
-                elif input_type == "checkbox":
-                    if "yes" in ai_answer.lower():
-                        driver.execute_script("arguments[0].click();", input_field)
-
-            except Exception as e:
-                print(f"⚠️ Error processing question {index + 1}: {e}")
-                continue  # Continue with next question even if one fails
-
-        # **Step 5: Click "Continue"**
-        print("🚀 Clicking 'Continue' button...")
-        continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
-        driver.execute_script("arguments[0].click();", continue_button)
-
-        print("✅ Employer Questions Completed!")
-        return True
-
-    except Exception as e:
-        print(f"⚠️ Error in Step 2 (Employer Questions): {e}")
-        return False
-
-
-
-def get_openai_answer(question):
-    """
-    Uses OpenAI to generate the best answer based on the job question and CV.
-
-    Parameters:
-        question (str): The employer's question.
-        CV_TEXT (str): The CV content.
-
-    Returns:
-        str: AI-generated answer.
-    """
-
-    prompt = f"""
-    You are a professional job application assistant. 
-    Based on the CV below, generate a professional and relevant response to the employer's question.
-
-    Employer Question: "{question}"
-
-    CV Content:
-    {CV_TEXT}
-
-    Answer:
-    """
-
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "system", "content": prompt}]
-    )
-
-    return response['choices'][0]['message']['content'].strip()
-
+    return question_data
 
 
 def find_best_dropdown_option(options, ai_answer):
