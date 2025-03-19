@@ -197,11 +197,11 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         print(driver.page_source)  # Check for missing elements in the page
         return False
 
-
-
 def apply_step_2_employer_questions(driver):
     """
     Extracts employer questions, sends them to OpenAI, and fills in answers dynamically.
+    Uses 'for' attribute to properly select dropdowns, textareas, and inputs.
+    Skips pre-selected dropdowns and pre-filled textareas.
     """
 
     # Extract questions + options
@@ -217,17 +217,52 @@ def apply_step_2_employer_questions(driver):
         print(f"📝 Answering: {question_text} → {answer}")
 
         try:
-            question_label = driver.find_element(By.XPATH, f"//label[contains(text(), '{question_text}')]")
-            input_field = question_label.find_element(By.XPATH, "following-sibling::*//input | following-sibling::*//select | following-sibling::*//textarea")
+            # ✅ Find the question label
+            question_label = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, f"//label[contains(text(), \"{question_text}\")]"))
+            )
+
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", question_label)
+            time.sleep(1)  # Ensure visibility
+
+            # ✅ Get the 'for' attribute to find matching input
+            question_id = question_label.get_attribute("for")
+
+            if not question_id:
+                print(f"⚠️ No 'for' attribute found for: {question_text}")
+                continue
+
+            # ✅ Locate the corresponding input field using the 'for' attribute
+            input_field = driver.find_element(By.ID, question_id)
 
             if input_field.tag_name == "select":
                 select = Select(input_field)
-                best_option = find_best_dropdown_option(select.options, answer)
-                select.select_by_visible_text(best_option)
+                selected_option = select.first_selected_option.text.strip()
 
-            elif input_field.tag_name == "input":
+                if selected_option and selected_option.lower() != "select":
+                    print(f"⏩ Skipping '{question_text}' (Already selected: {selected_option})")
+                    continue
+
+                # ✅ Select the correct answer (fallback to closest match)
+                try:
+                    select.select_by_visible_text(answer)
+                    print(f"✅ Selected '{answer}' for '{question_text}'")
+                except:
+                    print(f"⚠️ Answer '{answer}' not found in dropdown. Trying best match.")
+                    for option in select.options:
+                        if answer.lower() in option.text.lower():
+                            select.select_by_visible_text(option.text)
+                            print(f"✅ Selected best match: '{option.text}' for '{question_text}'")
+                            break
+
+            elif input_field.tag_name == "textarea":
+                existing_value = input_field.get_attribute("value").strip()
+                if existing_value:
+                    print(f"⏩ Skipping '{question_text}' (Already filled: {existing_value})")
+                    continue
                 input_field.clear()
                 input_field.send_keys(answer)
+                print(f"✅ Entered text: '{answer}' for '{question_text}'")
 
         except Exception as e:
             print(f"⚠️ Error processing question: {question_text}: {e}")
@@ -238,6 +273,57 @@ def apply_step_2_employer_questions(driver):
 
     print("✅ Employer Questions Completed!")
 
+def extract_questions_and_options(driver):
+    """
+    Extracts employer questions and available input options from the job application form.
+    Returns a list of questions with their available answers.
+    """
+    print("🔍 Extracting employer questions...")
+
+    question_data = []
+    question_elements = driver.find_elements(By.CSS_SELECTOR, "label")
+
+    for question_label in question_elements:
+        try:
+            question_text = question_label.text.strip()
+            input_options = []
+
+            # **Find associated dropdown (<select>)**
+            try:
+                dropdown_container = question_label.find_element(By.XPATH, "ancestor::div/following-sibling::div//select")
+                options = dropdown_container.find_elements(By.TAG_NAME, "option")
+                input_options = [opt.text.strip() for opt in options if opt.text.strip()]  # Remove empty options
+
+                print(f"✅ Found dropdown for '{question_text}' with options: {input_options}")
+
+            except Exception as e:
+                print(f"⚠️ No dropdown found for '{question_text}': {e}")
+
+            # **Find radio button options**
+            try:
+                radio_buttons = question_label.find_elements(By.XPATH, "ancestor::div/following-sibling::div//input[@type='radio']")
+                input_options += [radio.find_element(By.XPATH, "following-sibling::label").text.strip() for radio in radio_buttons]
+            except Exception as e:
+                print(f"⚠️ No radio buttons found for '{question_text}': {e}")
+
+            # **Find checkbox options**
+            try:
+                checkboxes = question_label.find_elements(By.XPATH, "ancestor::div/following-sibling::div//input[@type='checkbox']")
+                input_options += [checkbox.find_element(By.XPATH, "following-sibling::label").text.strip() for checkbox in checkboxes]
+            except Exception as e:
+                print(f"⚠️ No checkboxes found for '{question_text}': {e}")
+
+            question_data.append({
+                "question": question_text,
+                "options": input_options
+            })
+
+        except Exception as e:
+            print(f"⚠️ Error extracting question: {e}")
+            continue
+
+    print(f"🔍 Extracted Questions: {question_data}")
+    return question_data
 
 def get_openai_answers(questions):
     """
@@ -258,7 +344,6 @@ def get_openai_answers(questions):
         "Have you worked in a role which requires CSS development experience?": "Yes",
         "How many years' experience do you have as a software engineer?": "5",
         "How many years' experience do you have in a DevOps role?": "1",
-        "How many years' experience do you have as an ASP.Net MVC Developer?": "No experience",
         "What city are you based in?": "Perth",
         "Are you an Australian/NZ citizen?": "No",
         "What are your salary expectations?": "$100k",
@@ -292,73 +377,34 @@ def get_openai_answers(questions):
     }}
     """
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "system", "content": "You are an AI assistant helping with job applications."},
-                      {"role": "user", "content": full_prompt}],
-            temperature=0.5,
-            max_tokens=1000
-        )
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": "You are an AI assistant helping with job applications."},
+                  {"role": "user", "content": full_prompt}],
+        temperature=0.5,
+        max_tokens=1000
+    )
 
-        # 🔍 Debug: Print response structure
-        print(response)
+    # ✅ Extract raw response content
+    ai_response = response.choices[0].message.content.strip()
 
-        # ✅ Correct way to access response content
-        return json.loads(response.choices[0].message.content)
+    # 🔍 Debug: Print raw response
+    print(f"🔍 OpenAI Raw Response: {ai_response}")
 
-    except openai.OpenAIError as e:
-        print(f"⚠️ OpenAI API Error: {e}")
-        return {"answers": []}
+    # ✅ Extract JSON using regex
+    match = re.search(r"\{.*\}", ai_response, re.DOTALL)
 
-def extract_questions_and_options(driver):
-    """
-    Extracts employer questions and available input options from the job application form.
-    Returns a list of questions and their available answers.
-    """
-
-    print("🔍 Extracting employer questions...")
-
-    question_data = []
-    question_elements = driver.find_elements(By.CSS_SELECTOR, "label")
-
-    for question_label in question_elements:
+    if match:
+        json_text = match.group(0)  # Extract JSON portion
         try:
-            question_text = question_label.text.strip()
-            input_options = []
-
-            # **Handle Dropdowns**
-            try:
-                dropdown = question_label.find_element(By.XPATH, "following-sibling::select")
-                options = dropdown.find_elements(By.TAG_NAME, "option")
-                input_options = [opt.text.strip() for opt in options]
-            except:
-                pass
-
-            # **Handle Radio Buttons**
-            try:
-                radio_buttons = question_label.find_elements(By.XPATH, "following-sibling::div//input[@type='radio']")
-                input_options = [radio.find_element(By.XPATH, "following-sibling::label").text.strip() for radio in radio_buttons]
-            except:
-                pass
-
-            # **Handle Checkboxes**
-            try:
-                checkboxes = question_label.find_elements(By.XPATH, "following-sibling::div//input[@type='checkbox']")
-                input_options = [checkbox.find_element(By.XPATH, "following-sibling::label").text.strip() for checkbox in checkboxes]
-            except:
-                pass
-
-            question_data.append({
-                "question": question_text,
-                "options": input_options
-            })
-
-        except Exception as e:
-            print(f"⚠️ Error extracting question: {e}")
-            continue
-
-    return question_data
+            return json.loads(json_text)  # ✅ Parse extracted JSON
+        except json.JSONDecodeError as e:
+            print(f"⚠️ JSON Decode Error: {e}")
+            print(f"🔍 Extracted JSON: {json_text}")
+            return {"answers": []}  # Return empty structure instead of crashing
+    else:
+        print("⚠️ No valid JSON found in OpenAI response!")
+        return {"answers": []}  # Return default empty response
 
 
 def find_best_dropdown_option(options, ai_answer):
