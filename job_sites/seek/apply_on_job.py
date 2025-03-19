@@ -81,7 +81,8 @@ def apply_on_job(driver, job_id):
                     else:
                         print("⚠️ Step 1 failed! Check logs for errors.")
 
-                    apply_step_2_employer_questions(driver)
+                    automate_employer_questions(driver)
+                    # apply_step_2_employer_questions(driver)
 
                     print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
 
@@ -376,3 +377,95 @@ def select_best_radio_option(driver, question_label, ai_answer):
         if ai_answer.lower() in label.lower():
             driver.execute_script("arguments[0].click();", radio)
             return
+
+
+def extract_employer_questions_html(driver):
+    """
+    Extracts the full HTML of the employer questions section.
+    """
+    try:
+        print("🔍 Extracting employer questions HTML...")
+
+        # Find the form container
+        form_element = driver.find_element(By.CSS_SELECTOR, "form")  # Adjust if necessary
+        form_html = form_element.get_attribute("outerHTML")
+
+        print("✅ HTML Extracted!")
+        return form_html
+
+    except Exception as e:
+        print(f"⚠️ Error extracting HTML: {e}")
+        return None
+
+
+def run_generated_script(script_code):
+    """
+    Saves and executes the OpenAI-generated Python script dynamically.
+    """
+    try:
+        script_path = "generated_apply_script.py"
+
+        # Save the script to a file
+        with open(script_path, "w") as script_file:
+            script_file.write(script_code)
+
+        print(f"✅ Script saved to {script_path}")
+
+        # Run the script
+        print("🚀 Executing the script...")
+        exec(script_code)
+
+        print("✅ Script executed successfully!")
+
+    except Exception as e:
+        print(f"⚠️ Error running script: {e}")
+
+
+def generate_script_from_html(form_html):
+    """
+    Sends the extracted HTML to OpenAI and requests a Python Selenium script to fill it.
+    """
+    prompt = f"""
+    You are an expert in automating job applications using Selenium.
+    Below is the HTML of the employer questions section:
+
+    ```html
+    {form_html}
+    ```
+
+    Generate a Python Selenium script to:
+    1. Identify all input fields (text, dropdown, checkboxes, radio).
+    2. Fill the fields based on reasonable answers.
+    3. Skip already filled fields.
+    4. Click the "Continue" button at the end.
+
+    The script should be ready to run inside a Selenium environment.
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": prompt}]
+    )
+
+    return response['choices'][0]['message']['content']
+
+def automate_employer_questions(driver):
+    """
+    Fully automates employer question answering:
+    1. Extracts the HTML.
+    2. Sends it to OpenAI to generate Selenium script.
+    3. Executes the script to fill and submit the form.
+    """
+
+    form_html = extract_employer_questions_html(driver)
+    if not form_html:
+        print("❌ Failed to extract employer questions. Exiting...")
+        return False
+
+    script_code = generate_script_from_html(form_html)
+    if not script_code:
+        print("❌ OpenAI did not generate a script. Exiting...")
+        return False
+
+    run_generated_script(script_code)
+    return True
