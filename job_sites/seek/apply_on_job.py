@@ -197,90 +197,47 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         print(driver.page_source)  # Check for missing elements in the page
         return False
 
+
+
 def apply_step_2_employer_questions(driver):
-    """
-    Extracts employer questions, sends them to OpenAI, and fills in answers dynamically.
-    Uses 'for' attribute to properly select dropdowns, textareas, and inputs.
-    Skips pre-selected dropdowns and pre-filled textareas.
-    """
+    questions = extract_questions_and_options(driver)  # Ensure this function provides accurate data
+    answers = get_openai_answers(questions)  # Simulated function call
 
-    # Extract questions + options
-    questions = extract_questions_and_options(driver)
-
-    # Get AI-generated answers
-    answers = get_openai_answers(questions)["answers"]
-
-    for item in answers:
+    for item in answers["answers"]:
         question_text = item["question"]
-        answer = item["answer"]
+        ai_answer = item["answer"]
 
-        print(f"📝 Answering: {question_text} → {answer}")
+        # Find the label element that contains the text
+        label = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, f"//label[contains(text(), '{question_text}')]"))
+        )
 
-        try:
-            # ✅ Find the question label
-            question_label = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, f"//label[contains(text(), \"{question_text}\")]"))
-            )
-
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", question_label)
-            time.sleep(1)  # Ensure visibility
-
-            # ✅ Get the 'for' attribute to find matching input
-            question_id = question_label.get_attribute("for")
-
-            if not question_id:
-                print(f"⚠️ No 'for' attribute found for: {question_text}")
-                continue
-
-            # ✅ Locate the corresponding input field using the 'for' attribute
-            input_field = driver.find_element(By.ID, question_id)
-
-            # ✅ Handle Dropdown (`<select>`)
-            if input_field.tag_name == "select":
+        input_id = label.get_attribute('for')
+        print(f"✅ Found label for '{question_text}' with input ID: {input_id}")
+        if input_id:
+            # Check if the input field is a select or textarea
+            input_field = driver.find_element(By.ID, input_id)
+            print(f"✅ Found '{input_field}' for '{question_text}'")
+            if input_field.tag_name == 'select':
+                # Handle select dropdown
                 select = Select(input_field)
-                selected_option = select.first_selected_option.text.strip()
-
-                # **Skip if already selected**
-                if selected_option and selected_option.lower() != "select":
-                    print(f"⏩ Skipping '{question_text}' (Already selected: {selected_option})")
-                    continue
-
-                # ✅ Select the correct answer (fallback to best match)
-                try:
-                    select.select_by_visible_text(answer)
-                    print(f"✅ Selected '{answer}' for '{question_text}'")
-                except:
-                    print(f"⚠️ Answer '{answer}' not found in dropdown. Trying best match.")
-                    best_match = None
-                    for option in select.options:
-                        if answer.lower() in option.text.lower():
-                            best_match = option.text
-                            break
-
-                    if best_match:
-                        select.select_by_visible_text(best_match)
-                        print(f"✅ Selected best match: '{best_match}' for '{question_text}'")
-                    else:
-                        print(f"❌ No close match found for '{answer}' in dropdown.")
-
-            # ✅ Handle Textarea (`<textarea>`)
-            elif input_field.tag_name == "textarea":
-                existing_value = input_field.get_attribute("value").strip()
-                if existing_value:
-                    print(f"⏩ Skipping '{question_text}' (Already filled: {existing_value})")
-                    continue
+                # Find and select the option that best matches the AI answer
+                for option in select.options:
+                    print(f"Checking option: {option.text}")
+                    if ai_answer in option.text:
+                        select.select_by_visible_text(option.text)
+                        break
+            elif input_field.tag_name == 'textarea':
+                # Handle textarea
                 input_field.clear()
-                input_field.send_keys(answer)
-                print(f"✅ Entered text: '{answer}' for '{question_text}'")
+                input_field.send_keys(ai_answer)
 
-        except Exception as e:
-            print(f"⚠️ Error processing question: {question_text}: {e}")
+    # After filling all the fields, click the continue button
+    continue_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
+    )
+    continue_button.click()
 
-    # Click "Continue"
-    continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
-    driver.execute_script("arguments[0].click();", continue_button)
-
-    print("✅ Employer Questions Completed!")
 def extract_questions_and_options(driver):
     """
     Extracts employer questions and available input options from the job application form.
