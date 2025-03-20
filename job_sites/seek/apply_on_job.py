@@ -408,6 +408,7 @@ def get_openai_answers(questions):
         "How many years' experience do you have as an applications developer?": {"dropdown": "More than 5 years",
                                                                                  "text": "13 Years"},
         "How many years' experience do you have as a .NET developer?": {"dropdown": "Less than 1 year", "text": "1 Year"},
+        "How many years' experience do you have as a NodeJs developer?": {"dropdown": "Less than 1 year", "text": "1 Year"},
         "How many years' experience do you have working in an agile environment?": {"dropdown": "More than 5 years", "text": "13 Years"},
 
 
