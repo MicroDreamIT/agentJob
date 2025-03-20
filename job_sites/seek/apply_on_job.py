@@ -1,7 +1,6 @@
 import re
 import os
 import json
-import openai
 import time
 from difflib import get_close_matches
 from selenium.webdriver.common.by import By

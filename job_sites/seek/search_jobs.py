@@ -13,24 +13,24 @@ def search_jobs(driver, what="full-stack-developer", days=1):
     session = open_session()
 
     #test_begin
-    cover_letter = "I am a professional HR assistant helping to craft cover letters."
-    driver.get('https://www.seek.com.au/job/82897618/apply/role-requirements?sol=0c58f7151b4c526d7e0a8ba11f2db9ff1b81f5df')
-    # job_detail_returns = apply_on_job(driver, '82897618')
-    success_if = apply_step_1_resume_cover_letter(driver, cover_letter)
-    if success_if:
-        apply_step_2_employer_questions(driver)
+    # cover_letter = "I am a professional HR assistant helping to craft cover letters."
+    # driver.get('https://www.seek.com.au/job/82897618/apply/role-requirements?sol=0c58f7151b4c526d7e0a8ba11f2db9ff1b81f5df')
+    # # job_detail_returns = apply_on_job(driver, '82897618')
+    # success_if = apply_step_1_resume_cover_letter(driver, cover_letter)
+    # if success_if:
+    #     apply_step_2_employer_questions(driver)
     #test_end
 
-    # while True:
-    #     query = f"{what}-jobs?daterange={days}&page={page_number}"
-    #     full_url = f"{base_url}/{query}"
-    #     driver.get(full_url)
-    #     print(f"Scanning page {page_number}...")
-    #     process_job_listings(driver, session)
-    #
-    #     page_number += 1
-    #     if not has_next_page(driver):
-    #         break
+    while True:
+        query = f"{what}-jobs?daterange={days}&page={page_number}"
+        full_url = f"{base_url}/{query}"
+        driver.get(full_url)
+        print(f"Scanning page {page_number}...")
+        process_job_listings(driver, session)
+
+        page_number += 1
+        if not has_next_page(driver):
+            break
 
     close_session(session)
 
