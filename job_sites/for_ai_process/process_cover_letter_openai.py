@@ -24,6 +24,7 @@ def process_cover_letter_openai(job_details):
 
     Write a personalized, concise, and professional cover letter that highlights my skills and experience for this role.
     Use a simple, humble, unique and growth mindset approach of Dr Carol. Reflect eager to learn, contribute, share and grow.
+    Total characters must be less than 1400.
     
     
     Please dont write subject.
@@ -37,8 +38,8 @@ def process_cover_letter_openai(job_details):
                 {"role": "system", "content": "You are a professional HR assistant helping to craft cover letters."},
                 {"role": "user", "content": full_prompt}
             ],
-            temperature=0.7,  # Adjust creativity level
-            max_tokens=300
+            temperature=0.5,  # Adjust creativity level
+            max_tokens=933
         )
 
         cover_letter = response.choices[0].message.content.strip()

@@ -40,16 +40,52 @@ def extract_job_details(driver):
 
 
 def update_seek_profile(driver):
-    continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
-    continue_button.click()
-    print("✅ Update Seek Profile Completed!")
+    try:
+        # Locate the button
+        button = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "button[data-testid='continue-button']"))
+        )
+
+        # Use ActionChains to scroll to the button and focus on it
+        ActionChains(driver).move_to_element(button).perform()
+
+        # Wait until the element is definitely clickable after moving to it
+        WebDriverWait(driver, 2).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='continue-button']"))
+        )
+
+        # Click the button
+        button.click()
+        print("✅ Update Seek Profile Completed!")
+    except Exception as e:
+        print(f"Failed to update Seek profile: {str(e)}")
+        return False
+
     return True
 
 
 def review_and_submit(driver):
-    continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='review-submit-application']")
-    continue_button.click()
-    print("✅ Update Seek Review and Submit Completed!")
+    try:
+        # Locate the submit button using its CSS selector and test ID
+        button = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "button[data-testid='review-submit-application']"))
+        )
+
+        # Use ActionChains to scroll to the button and focus on it
+        ActionChains(driver).move_to_element(button).perform()
+
+        # Ensure the button is clickable before proceeding
+        WebDriverWait(driver, 2).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='review-submit-application']"))
+        )
+
+        # Click the submit button
+        button.click()
+        print("✅ Review and Submit Completed!")
+    except Exception as e:
+        print(f"Failed to complete review and submit: {str(e)}")
+        return False
+
     return True
 
 
@@ -82,6 +118,7 @@ def apply_on_job(driver, job_id, job_link):
         quick_apply_button = wait.until(EC.element_to_be_clickable(
             (By.CSS_SELECTOR, "a[data-automation='job-detail-apply']"))
         )
+
         if 'quick apply' in quick_apply_button.text.lower():
             driver.execute_script("arguments[0].click();", quick_apply_button)
 
@@ -106,10 +143,14 @@ def apply_on_job(driver, job_id, job_link):
                         print("⚠️ Step 1 failed! Check logs for errors.")
 
                     if check_for_answer_questions_text(driver):
+                        print("✅ Step 2 in progress...")
                         apply_step_2_employer_questions(driver)
-                        time.sleep(1)
+
+                    time.sleep(1)
+                    print("➡️ update_seek_profile in progress...")
                     update_seek_profile(driver)
                     time.sleep(1)
+                    print("➡️ review_and_submit in progress...")
                     review_and_submit(driver)
 
                     print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
@@ -215,7 +256,7 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
 
         # ✅ Step 4: Click "Continue"
         print("🚀 Clicking 'Continue' button...")
-
+        time.sleep(5)
         continue_button = wait.until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='continue-button']"))
         )
@@ -253,6 +294,9 @@ def apply_step_2_employer_questions(driver):
             input_field = driver.find_element(By.ID, input_id)
             if question_data['input_type'] == 'select':
                 select = Select(input_field)
+                if select.first_selected_option.text.strip():
+                    print(f"Skipping '{question_text}' as it is already selected.")
+                    continue
                 try:
                     select.select_by_visible_text(answer)
                     print(f"Selected '{answer}' for '{question_text}'")
@@ -269,7 +313,7 @@ def apply_step_2_employer_questions(driver):
     ActionChains(driver).move_to_element(button).perform()
 
     # Wait until the element is definitely clickable
-    WebDriverWait(driver, 1).until(
+    WebDriverWait(driver, 2).until(
         EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='continue-button']"))
     )
     button.click()
@@ -279,30 +323,58 @@ def apply_step_2_employer_questions(driver):
 
 def extract_questions_and_options(driver):
     questions = []
-    labels = driver.find_elements(By.TAG_NAME, 'label')
-    for label in labels:
-        question_text = label.text.strip()
-        input_id = label.get_attribute('for')
-        if input_id:
-            input_element = driver.find_element(By.ID, input_id)
-            input_type = input_element.tag_name
-            options = []
-            if input_type == 'select':
-                select = Select(input_element)
-                options = [opt.text for opt in select.options]
-            elif input_type == 'input' and input_element.get_attribute('type') == 'radio':
-                # Find all radio buttons with the same name attribute
-                radios = driver.find_elements(By.NAME, input_element.get_attribute('name'))
-                options = [radio.get_attribute('value') for radio in radios]
 
-            question_data = {
-                'question': question_text,
-                'options': options,
-                'input_type': 'select' if input_type == 'select' else input_element.get_attribute('type'),
-                'input_id': input_id,
-                'name': input_element.get_attribute('name') if input_type == 'input' else None
-            }
-            questions.append(question_data)
+    # Handle fieldsets for radio or checkbox groups
+    fieldsets = driver.find_elements(By.CSS_SELECTOR, 'fieldset[role="radiogroup"]')
+    for fieldset in fieldsets:
+        legend = fieldset.find_element(By.TAG_NAME, 'legend')
+        question_text = legend.text.strip() if legend else "No question text found"
+
+        inputs = fieldset.find_elements(By.CSS_SELECTOR, 'input[type="radio"], input[type="checkbox"]')
+        options = []
+        for input_elem in inputs:
+            label = driver.find_element(By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')
+            option_text = label.text.strip() if label else "No label found"
+
+            options.append({
+                'value': input_elem.get_attribute('value'),
+                'label': option_text,
+                'id': input_elem.get_attribute('id'),
+                'type': input_elem.get_attribute('type')
+            })
+
+        questions.append({
+            'question': question_text,
+            'options': options,
+            'input_type': inputs[0].get_attribute('type') if inputs else 'unknown',
+            'fieldset_id': fieldset.get_attribute('id')
+        })
+
+    # Handle selects, text inputs, and textareas
+    inputs = driver.find_elements(By.CSS_SELECTOR, 'input[type="text"], textarea, select')
+    for input_elem in inputs:
+        label = driver.find_element(By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')
+        question_text = label.text.strip() if label else "No label found"
+
+        if input_elem.tag_name == 'select':
+            select_obj = Select(input_elem)
+            options = [{'value': opt.get_attribute('value'), 'label': opt.text} for opt in select_obj.options]
+            input_type = 'select'
+        elif input_elem.tag_name == 'textarea':
+            options = []
+            input_type = 'textarea'
+        else:  # input type="text"
+            options = []
+            input_type = 'text'
+
+        questions.append({
+            'question': question_text,
+            'options': options,
+            'input_type': input_type,
+            'input_id': input_elem.get_attribute('id'),
+            'name': input_elem.get_attribute('name')
+        })
+
     print(f"🔍 Extracted questions: ", questions)
     return questions
 
@@ -311,7 +383,7 @@ def get_openai_answers(questions):
     predefined_answers = {
         "How many years' experience do you have as a full stack developer?": {"dropdown": "More than 5 years",
                                                                               "text": "13 Years"},
-        "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "0-1 years",
+        "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "Less than 1 year",
                                                                                  "text": "1 Year"},
         "Which of the following statements best describes your right to work in Australia?": "Skip",
         "Do you have a current Australian driver's licence?": "No",
@@ -333,8 +405,12 @@ def get_openai_answers(questions):
                                                                       "text": "13 Years"},
         "Are you willing to work on client site 3 days per week in": "Yes",
         "Are you willing to relocate": "Yes",
-        "How many years' experience do you have as an applications developer?":{"dropdown": "More than 5 years",
-                                                                      "text": "13 Years"},
+        "How many years' experience do you have as an applications developer?": {"dropdown": "More than 5 years",
+                                                                                 "text": "13 Years"},
+        "How many years' experience do you have as a .NET developer?": {"dropdown": "Less than 1 year", "text": "1 Year"},
+        "How many years' experience do you have working in an agile environment?": {"dropdown": "More than 5 years", "text": "13 Years"},
+
+
     }
 
     # Format the prompt for OpenAI
