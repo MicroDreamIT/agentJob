@@ -2,7 +2,7 @@ import os
 import datetime
 from sqlalchemy import create_engine, Column, Text, Integer, String, DateTime, UniqueConstraint, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker  # Updated import here
-from .db_config import db_url
+from .config import db_url
 
 engine = create_engine(db_url)
 Session = sessionmaker(bind=engine)
