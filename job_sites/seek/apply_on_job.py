@@ -10,13 +10,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 
-client = openai.Client(api_key=os.getenv("OPENAI_API_KEY"))
-PREDEFINED_ANSWERS = {
-    "Which of the following statements best describes your right to work in Australia?":
-        "I require sponsorship to work for a new employer (e.g. 482, 457)",
-    "What's your expected annual base salary?": "$90k"
-}
 CV_TEXT = os.getenv("CV_TEXT")
+
 
 def extract_job_details(driver):
     """Extract job details (Title, Company, Location, Salary, Description) in text format."""
@@ -29,10 +24,22 @@ def extract_job_details(driver):
         return None
 
 
+def update_seek_profile(driver):
+    continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
+    continue_button.click()
+    return True
+
+
+def review_and_submit(driver):
+    continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='review-submit-application']")
+    continue_button.click()
+    return True
+
+
 def apply_on_job(driver, job_id):
     original_window = driver.current_window_handle
     wait = WebDriverWait(driver, 15)
-    cover_letter=''
+    cover_letter = ''
     try:
         # Step 1: Precisely click the job title in the left-side panel
         job_title_selector = f"article[data-job-id='{job_id}'] a[data-automation='jobTitle']"
@@ -45,7 +52,6 @@ def apply_on_job(driver, job_id):
 
         job_text = extract_job_details(driver)
         cover_letter = process_cover_letter_openai(job_text)
-        print(cover_letter)  # Debug print, can remove in production
 
         if job_text is None:
             return [False, cover_letter]
@@ -82,8 +88,9 @@ def apply_on_job(driver, job_id):
                     else:
                         print("⚠️ Step 1 failed! Check logs for errors.")
 
-
                     apply_step_2_employer_questions(driver)
+                    update_seek_profile(driver)
+                    review_and_submit(driver)
 
                     print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
 
@@ -198,106 +205,73 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         return False
 
 
-
 def apply_step_2_employer_questions(driver):
-    questions = extract_questions_and_options(driver)  # Ensure this function provides accurate data
-    answers = get_openai_answers(questions)  # Simulated function call
+    questions = extract_questions_and_options(driver)
+    response = get_openai_answers(questions)
+    answers = response["answers"]  # This should directly access the list of answer dictionaries
 
-    for item in answers["answers"]:
-        question_text = item["question"]
-        ai_answer = item["answer"]
+    for question_data in questions:
+        question_text = question_data['question']
+        input_id = question_data['input_id']
 
-        # Find the label element that contains the text
-        label = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, f"//label[contains(text(), '{question_text}')]"))
-        )
+        # Retrieve the answer from OpenAI response matching this question
+        answer_info = next((item for item in answers if item['question'] == question_text), None)
+        if answer_info:
+            answer = answer_info['answer']
 
-        input_id = label.get_attribute('for')
-        print(f"✅ Found label for '{question_text}' with input ID: {input_id}")
-        if input_id:
-            # Check if the input field is a select or textarea
+            # Process the question based on its type
             input_field = driver.find_element(By.ID, input_id)
-            print(f"✅ Found '{input_field}' for '{question_text}'")
-            if input_field.tag_name == 'select':
-                # Handle select dropdown
+            if question_data['input_type'] == 'select':
                 select = Select(input_field)
-                # Find and select the option that best matches the AI answer
-                for option in select.options:
-                    print(f"Checking option: {option.text}")
-                    if ai_answer in option.text:
-                        select.select_by_visible_text(option.text)
-                        break
-            elif input_field.tag_name == 'textarea':
-                # Handle textarea
+                try:
+                    select.select_by_visible_text(answer)
+                    print(f"Selected '{answer}' for '{question_text}'")
+                except Exception as e:
+                    print(f"Failed to select '{answer}' for '{question_text}': {str(e)}")
+            elif question_data['input_type'] == 'textarea':
                 input_field.clear()
-                input_field.send_keys(ai_answer)
+                input_field.send_keys(answer)
+                print(f"Filled textarea for '{question_text}' with '{answer}'")
+        else:
+            print(f"No answer provided for '{question_text}'")
 
-    # After filling all the fields, click the continue button
-    continue_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
-    )
+    # Click "Continue"
+    time.sleep(2)
+    continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
     continue_button.click()
 
+    print("Employer Questions Completed!")
+
+
 def extract_questions_and_options(driver):
-    """
-    Extracts employer questions and available input options from the job application form.
-    Returns a list of questions with their available answers.
-    """
-    print("🔍 Extracting employer questions...")
-
-    question_data = []
-    question_elements = driver.find_elements(By.CSS_SELECTOR, "label")
-
-    for question_label in question_elements:
-        try:
-            question_text = question_label.text.strip()
-            input_options = []
-
-            # **Find associated dropdown (<select>)**
-            try:
-                dropdown_container = question_label.find_element(By.XPATH, "ancestor::div/following-sibling::div//select")
-                options = dropdown_container.find_elements(By.TAG_NAME, "option")
-                input_options = [opt.text.strip() for opt in options if opt.text.strip()]  # Remove empty options
-
-                print(f"✅ Found dropdown for '{question_text}' with options: {input_options}")
-
-            except Exception as e:
-                print(f"⚠️ No dropdown found for '{question_text}': {e}")
-
-            # **Find radio button options**
-            try:
-                radio_buttons = question_label.find_elements(By.XPATH, "ancestor::div/following-sibling::div//input[@type='radio']")
-                input_options += [radio.find_element(By.XPATH, "following-sibling::label").text.strip() for radio in radio_buttons]
-            except Exception as e:
-                print(f"⚠️ No radio buttons found for '{question_text}': {e}")
-
-            # **Find checkbox options**
-            try:
-                checkboxes = question_label.find_elements(By.XPATH, "ancestor::div/following-sibling::div//input[@type='checkbox']")
-                input_options += [checkbox.find_element(By.XPATH, "following-sibling::label").text.strip() for checkbox in checkboxes]
-            except Exception as e:
-                print(f"⚠️ No checkboxes found for '{question_text}': {e}")
-
-            question_data.append({
-                "question": question_text,
-                "options": input_options
+    questions = []
+    labels = driver.find_elements(By.TAG_NAME, 'label')
+    for label in labels:
+        question_text = label.text.strip()
+        input_id = label.get_attribute('for')
+        if input_id:
+            input_element = driver.find_element(By.ID, input_id)
+            input_type = input_element.tag_name
+            options = []
+            if input_type == 'select':
+                select = Select(input_element)
+                options = [opt.text for opt in select.options]
+            questions.append({
+                'question': question_text,
+                'options': options,
+                'input_type': input_type,
+                'input_id': input_id,
             })
+    print(f"🔍 Extracted questions: ", questions)
+    return questions
 
-        except Exception as e:
-            print(f"⚠️ Error extracting question: {e}")
-            continue
-
-    print(f"🔍 Extracted Questions: {question_data}")
-    return question_data
 
 def get_openai_answers(questions):
-    """
-    Sends employer questions and answer options to OpenAI and returns structured answers.
-    """
-
     predefined_answers = {
-        "How many years' experience do you have as a full stack developer?": {"dropdown": "More than 5 years", "text": "13 Years"},
-        "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "0-1 years", "text": "1 Year"},
+        "How many years' experience do you have as a full stack developer?": {"dropdown": "More than 5 years",
+                                                                              "text": "13 Years"},
+        "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "0-1 years",
+                                                                                 "text": "1 Year"},
         "Which of the following statements best describes your right to work in Australia?": "Skip",
         "Do you have a current Australian driver's licence?": "No",
         "Do you own or have regular access to a car?": "Yes",
@@ -335,7 +309,8 @@ def get_openai_answers(questions):
     Example output:
     {{
       "answers": [
-        {{"question": "How many years' experience do you have as a full stack developer?", "answer": "13 Years"}},
+        {{"question": "How many years' experience do you have as a full stack developer?", 
+        "answer": "13 Years"}},
         {{"question": "What is your expected salary?", "answer": "$100k"}},
         {{"question": "Which of the following programming languages are you experienced in?", "answer": ["Python", "JavaScript", "C++"]}}
       ]
@@ -404,8 +379,6 @@ def select_best_radio_option(driver, question_label, ai_answer):
         if ai_answer.lower() in label.lower():
             driver.execute_script("arguments[0].click();", radio)
             return
-
-
 
 
 def extract_integer(text):

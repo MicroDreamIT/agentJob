@@ -24,7 +24,6 @@ def run_test_application():
     if not api_key:
         raise ValueError("❌ ERROR: OPENAI_API_KEY is missing in test execution!")
 
-    client = openai.Client(api_key=api_key)
     driver = login_to_seek()
 
     if not driver:

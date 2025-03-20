@@ -1,6 +1,7 @@
 import sys
 import os
 
+import openai
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -8,6 +9,7 @@ CHROME_DRIVER_PATH = os.getenv("CHROME_DRIVER_PATH", "/usr/local/bin/chromedrive
 SEEK_EMAIL = os.getenv('SEEK_EMAIL')
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 CV_TEXT = os.getenv("CV_TEXT")
+OPENAI_CLIENT = openai.Client(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 # Use environment variables
