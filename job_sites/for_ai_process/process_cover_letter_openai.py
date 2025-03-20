@@ -38,7 +38,7 @@ def process_cover_letter_openai(job_details):
                 {"role": "user", "content": full_prompt}
             ],
             temperature=0.7,  # Adjust creativity level
-            max_tokens=400
+            max_tokens=300
         )
 
         cover_letter = response.choices[0].message.content.strip()

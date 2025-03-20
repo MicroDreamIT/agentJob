@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 
 from core.config import OPENAI_CLIENT, RESUME_TEXT
+from core.database import FailedJob, open_session
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 
@@ -41,16 +42,18 @@ def extract_job_details(driver):
 def update_seek_profile(driver):
     continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
     continue_button.click()
+    print("✅ Update Seek Profile Completed!")
     return True
 
 
 def review_and_submit(driver):
     continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='review-submit-application']")
     continue_button.click()
+    print("✅ Update Seek Review and Submit Completed!")
     return True
 
 
-def apply_on_job(driver, job_id):
+def apply_on_job(driver, job_id, job_link):
     original_window = driver.current_window_handle
     wait = WebDriverWait(driver, 15)
     cover_letter = ''
@@ -133,7 +136,17 @@ def apply_on_job(driver, job_id):
             return [True, cover_letter]
 
     except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
-        print(f"⚠️ Quick Apply unavailable for job ID {job_id}: {e}")
+        session = open_session()
+        failed_job = FailedJob(
+            provider='SEEK',
+            provider_id=job_id,
+            link=job_link,  # Ensure you retrieve and store the job link
+            error_message=str(e)
+        )
+        session.add(failed_job)
+        session.commit()
+        session.close()
+        return [False, str(e)]
 
     return [False, cover_letter]
 
@@ -261,7 +274,7 @@ def apply_step_2_employer_questions(driver):
     )
     button.click()
 
-    print("Employer Questions Completed!")
+    print("✅ Employer Questions Completed!")
 
 
 def extract_questions_and_options(driver):

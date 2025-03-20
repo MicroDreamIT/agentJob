@@ -16,6 +16,15 @@ if not os.path.exists(os.path.join(BASE_DIR, 'data')):
     os.makedirs(os.path.join(BASE_DIR, 'data'))  # Create 'data' directory if it does not exist
 db_url = db_url
 
+class FailedJob(Base):
+    __tablename__ = 'failed_jobs'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    provider = Column(String, nullable=False)
+    provider_id = Column(String, nullable=False)
+    link = Column(String, nullable=False)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 class Job(Base):
     __tablename__ = 'jobs'
     id = Column(Integer, primary_key=True, autoincrement=True)
