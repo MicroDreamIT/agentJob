@@ -1,6 +1,6 @@
 import os
 import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, UniqueConstraint, Boolean
+from sqlalchemy import create_engine, Column, Text, Integer, String, DateTime, UniqueConstraint, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker  # Updated import here
 from .db_config import db_url
 
@@ -26,6 +26,7 @@ class Job(Base):
     is_quick_apply = Column(Boolean, default=False, nullable=False)
     applied_on = Column(DateTime, default=None)  # Applied is now a DateTime, defaults to None
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    cover_letter = Column(Text, nullable=True)
 
     __table_args__ = (UniqueConstraint('provider', 'provider_id', name='_provider_provider_id_uc'),)
 

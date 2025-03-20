@@ -6,10 +6,24 @@ from difflib import get_close_matches
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
+
+from core.config import OPENAI_CLIENT, RESUME_TEXT
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 
 CV_TEXT = os.getenv("CV_TEXT")
+
+
+def check_for_answer_questions_text(driver):
+    # Navigate to the div with data-automation attribute 'job-header'
+    job_header = driver.find_element_by_css_selector('div[data-automation="job-header"]')
+
+    # Find all li elements within the job_header context
+    list_items = job_header.find_elements_by_css_selector('li')
+    print(f'number of header items: {len(list_items)}')
+
+    # Check if there are exactly four li elements
+    return len(list_items) == 4
 
 
 def extract_job_details(driver):
@@ -87,8 +101,11 @@ def apply_on_job(driver, job_id):
                     else:
                         print("⚠️ Step 1 failed! Check logs for errors.")
 
-                    apply_step_2_employer_questions(driver)
+                    if check_for_answer_questions_text(driver):
+                        apply_step_2_employer_questions(driver)
+                        time.sleep(1)
                     update_seek_profile(driver)
+                    time.sleep(1)
                     review_and_submit(driver)
 
                     print(f"✅ Quick Apply form loaded successfully for job {job_id}.")
@@ -147,7 +164,7 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
         print(f"📝 Available resumes: {available_resumes}")
 
         # Ensure the correct resume text exists
-        resume_text = "18/3/25 - Resume-sample.pdf"
+        resume_text = RESUME_TEXT
         if resume_text not in available_resumes:
             print(f"⚠️ Resume '{resume_text}' not found! Check dropdown options.")
             return False
@@ -255,12 +272,19 @@ def extract_questions_and_options(driver):
             if input_type == 'select':
                 select = Select(input_element)
                 options = [opt.text for opt in select.options]
-            questions.append({
+            elif input_type == 'input' and input_element.get_attribute('type') == 'radio':
+                # Find all radio buttons with the same name attribute
+                radios = driver.find_elements(By.NAME, input_element.get_attribute('name'))
+                options = [radio.get_attribute('value') for radio in radios]
+
+            question_data = {
                 'question': question_text,
                 'options': options,
-                'input_type': input_type,
+                'input_type': 'select' if input_type == 'select' else input_element.get_attribute('type'),
                 'input_id': input_id,
-            })
+                'name': input_element.get_attribute('name') if input_type == 'input' else None
+            }
+            questions.append(question_data)
     print(f"🔍 Extracted questions: ", questions)
     return questions
 
@@ -287,6 +311,10 @@ def get_openai_answers(questions):
         "What are your salary expectations?": "$100k",
         "Do you have full working rights in Australia?": "No",
         "Will you require visa sponsorship either now or in the future?": "Yes",
+        "How many years' experience do you have using SQL queries?": {"dropdown": "More than 5 years",
+                                                                      "text": "13 Years"},
+        "Are you willing to work on client site 3 days per week in": "Yes",
+        "Are you willing to relocate": "Yes"
     }
 
     # Format the prompt for OpenAI
@@ -314,9 +342,11 @@ def get_openai_answers(questions):
         {{"question": "Which of the following programming languages are you experienced in?", "answer": ["Python", "JavaScript", "C++"]}}
       ]
     }}
+    
+    Are you willing to work or relocate in any city and country for the job? is always Yes. 
     """
 
-    response = client.chat.completions.create(
+    response = OPENAI_CLIENT.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "system", "content": "You are an AI assistant helping with job applications."},
                   {"role": "user", "content": full_prompt}],

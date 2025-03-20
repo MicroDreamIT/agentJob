@@ -19,6 +19,8 @@ def search_jobs(driver, what="full-stack-developer", days=1):
     # success_if = apply_step_1_resume_cover_letter(driver, cover_letter)
     # if success_if:
     #     apply_step_2_employer_questions(driver)
+
+    # return True
     #test_end
 
     while True:
@@ -36,7 +38,7 @@ def search_jobs(driver, what="full-stack-developer", days=1):
 
 
 def process_job_listings(driver, session):
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 10)
     job_list = wait.until(
         EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article[data-automation='normalJob']")))
 
@@ -60,7 +62,8 @@ def process_job(session, driver, job_id, job_title, job_link):
             title=job_title,
             link=job_link,
             is_quick_apply=is_quick_apply_available,
-            applied_on=datetime.utcnow()
+            applied_on=datetime.utcnow(),
+            cover_letter=cover_letter
         )
         session.add(new_job)
         session.commit()
