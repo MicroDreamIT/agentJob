@@ -3,6 +3,8 @@ import os
 import json
 import time
 from difflib import get_close_matches
+
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,11 +18,10 @@ CV_TEXT = os.getenv("CV_TEXT")
 
 def check_for_answer_questions_text(driver):
     # Navigate to the div with data-automation attribute 'job-header'
-    job_header = driver.find_element_by_css_selector('div[data-automation="job-header"]')
+    job_header = driver.find_element(By.CSS_SELECTOR, 'div[data-automation="job-header"]')
 
     # Find all li elements within the job_header context
-    list_items = job_header.find_elements_by_css_selector('li')
-    print(f'number of header items: {len(list_items)}')
+    list_items = job_header.find_elements(By.CSS_SELECTOR, 'li')
 
     # Check if there are exactly four li elements
     return len(list_items) == 4
@@ -251,10 +252,14 @@ def apply_step_2_employer_questions(driver):
         else:
             print(f"No answer provided for '{question_text}'")
 
-    # Click "Continue"
-    time.sleep(2)
-    continue_button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
-    continue_button.click()
+    button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
+    ActionChains(driver).move_to_element(button).perform()
+
+    # Wait until the element is definitely clickable
+    WebDriverWait(driver, 1).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='continue-button']"))
+    )
+    button.click()
 
     print("Employer Questions Completed!")
 
@@ -314,7 +319,9 @@ def get_openai_answers(questions):
         "How many years' experience do you have using SQL queries?": {"dropdown": "More than 5 years",
                                                                       "text": "13 Years"},
         "Are you willing to work on client site 3 days per week in": "Yes",
-        "Are you willing to relocate": "Yes"
+        "Are you willing to relocate": "Yes",
+        "How many years' experience do you have as an applications developer?":{"dropdown": "More than 5 years",
+                                                                      "text": "13 Years"},
     }
 
     # Format the prompt for OpenAI

@@ -25,9 +25,9 @@ def process_cover_letter_openai(job_details):
     Write a personalized, concise, and professional cover letter that highlights my skills and experience for this role.
     Use a simple, humble, unique and growth mindset approach of Dr Carol. Reflect eager to learn, contribute, share and grow.
     
+    
     Please dont write subject.
     try to start with the name, or the company name, Dear ....
-    Add my linkedin profile, and github profile at the end.
     """
 
     try:
@@ -38,7 +38,7 @@ def process_cover_letter_openai(job_details):
                 {"role": "user", "content": full_prompt}
             ],
             temperature=0.7,  # Adjust creativity level
-            max_tokens=500
+            max_tokens=400
         )
 
         cover_letter = response.choices[0].message.content.strip()
