@@ -282,7 +282,10 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
 
 def apply_step_2_employer_questions(driver):
     questions = extract_questions_and_options(driver)
+    print(f"🔍 Extracted questions: ", questions)
     response = get_openai_answers(questions)
+    print(f"🔍 OpenAI Raw Response: {response}")
+
     answers = response["answers"]  # This should directly access the list of answer dictionaries
 
     for question_data in questions:
@@ -317,6 +320,7 @@ def apply_step_2_employer_questions(driver):
         else:
             print(f"No answer provided for '{question_text}'")
 
+    time.sleep(2)
     button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
     ActionChains(driver).move_to_element(button).perform()
 
@@ -423,8 +427,6 @@ def extract_questions_and_options(driver):
             })
         except NoSuchElementException as e:
             print(f"Error processing input: {e}")
-
-    print(f"🔍 Extracted questions: ", questions)
     return questions
 
 
@@ -481,6 +483,8 @@ def get_openai_answers(questions):
                                                                                     "text": "13 Years"},
         "Have you completed a qualification in engineering?": {"dropdown": "Bachelor's degree",
                                                                "text": "Bachelor's degree"},
+        "How many years' experience do you have as an eCommerce Specialist?": {"dropdown": "More than 5 years",
+                                                                                 "text": "13 Years"}
 
     }
     # if app_env == 'test': return preset_test_data()
@@ -527,7 +531,7 @@ def get_openai_answers(questions):
     ai_response = response.choices[0].message.content.strip()
 
     # 🔍 Debug: Print raw response
-    print(f"🔍 OpenAI Raw Response: {ai_response}")
+
 
     # ✅ Extract JSON using regex
     match = re.search(r"\{.*\}", ai_response, re.DOTALL)

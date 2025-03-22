@@ -20,7 +20,7 @@ def search_jobs_test(driver, db_session):
     close_session(db_session)
     return True
 
-def search_jobs(driver, what="full-stack-developer", days=1):
+def search_jobs(driver, what="full-stack-developer", days=1, failed_job=None):
     db_session = open_session()
     if app_env == "test": search_jobs_test(driver, db_session)
 
