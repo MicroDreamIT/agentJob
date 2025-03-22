@@ -34,4 +34,6 @@ pip-selfcheck.json
 /alembic/versions/
 /alembic/versions/*
 .env
-.testenv!/data/
+.testenv
+data/
+
