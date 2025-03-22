@@ -1,9 +1,13 @@
 import openai
 import os
-from core.config import OPENAI_CLIENT
+from core.config import OPENAI_CLIENT, app_env
 
+
+def test_cover_letter():
+    return 'I am a professional HR assistant helping to craft cover letters.'
 
 def process_cover_letter_openai(job_details):
+    if app_env == "test": return test_cover_letter()
     """
     Generate a cover letter using OpenAI API based on job details.
 

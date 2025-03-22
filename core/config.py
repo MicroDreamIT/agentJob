@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 def load_environment():
     """ Load the appropriate environment variables based on the deployment context. """
+    app_env = 'production'
     if os.getenv('APP_ENV') == 'production'.lower():
         dotenv_path = '.env'
     else:
@@ -30,7 +31,10 @@ RESUME_TEXT = os.getenv('RESUME_TEXT')  # Provide a default path if not set
 
 # Database URL with a default value
 db_url = os.getenv('DATABASE_URL')
-
+app_env = os.getenv('APP_ENV')
 # Usage of variables for clarity
 print(f"Using Chrome Driver at: {CHROME_DRIVER_PATH}")
+# print(f"OpenAI API: {OPENAI_CLIENT}")
 print(f"Database URL: {db_url}")
+print(f"APP_ENV: {app_env}")
+print(f"SEEK_EMAIL: {os.getenv('SEEK_EMAIL')}")

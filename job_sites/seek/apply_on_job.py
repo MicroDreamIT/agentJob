@@ -304,7 +304,6 @@ def apply_step_2_employer_questions(driver):
                 except Exception as e:
                     print(f"Failed to select '{answer}' for '{question_text}': {str(e)}")
             elif question_data['input_type'] == 'radio':
-                # Process radio buttons by finding the correct option to select
                 select_radio_option(driver, question_data, answer)
 
             elif question_data['input_type'] == 'textarea':
@@ -326,85 +325,104 @@ def apply_step_2_employer_questions(driver):
     print("✅ Employer Questions Completed!")
 
 def select_radio_option(driver, question_data, answer):
-    input_id = question_data['input_id']
-    answer = question_data['answer']
+    base_input_id = question_data['input_id']
     question_text = question_data['question']
 
     try:
-        # Locate the radio button by ID and value
-        xpath_expression = f"//input[@id='{input_id}' and @value='{answer}']"
-        option_to_select = driver.find_element(By.XPATH, xpath_expression)
+        # Construct the XPath to locate the correct radio button by text label associated with it
+        xpath_expression = f"//input[starts-with(@id, '{base_input_id}_') and @type='radio']"
+        radio_buttons = driver.find_elements(By.XPATH, xpath_expression)
 
-        # Check if the radio button is already selected
-        if not option_to_select.is_selected():
-            # Use ActionChains to perform the click if it is not already selected
-            ActionChains(driver).move_to_element(option_to_select).click().perform()
-            print(f"Selected radio button '{answer}' for '{question_text}'")
+        # Find the correct radio button based on the label text
+        for radio in radio_buttons:
+            # Locate the label corresponding to the radio button to check its text
+            label = driver.find_element(By.XPATH, f"//label[@for='{radio.get_attribute('id')}']")
+            if label.text.strip().lower() == answer.lower():
+                # Click the radio button if it is not already selected
+                if not radio.is_selected():
+                    ActionChains(driver).move_to_element(radio).click().perform()
+                    print(f"Selected radio button '{answer}' for '{question_text}'")
+                    break
         else:
-            print(f"Radio button '{answer}' for '{question_text}' is already selected")
+            print(f"No radio button found matching answer '{answer}' for '{question_text}'")
 
     except NoSuchElementException:
-        # Handle the case where the radio button is not found
-        print(f"Radio button with ID '{input_id}' and value '{answer}' not found for '{question_text}'")
+        print(f"Radio button with base ID '{base_input_id}' and answer '{answer}' not found for '{question_text}'")
     except Exception as e:
-        # General exception handling to catch any other issues during the operation
         print(f"An error occurred while trying to select the radio button for '{question_text}': {e}")
+
+
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
+
 
 def extract_questions_and_options(driver):
     questions = []
+    wait = WebDriverWait(driver, 10)
 
     # Handle fieldsets for radio or checkbox groups
-    fieldsets = driver.find_elements(By.CSS_SELECTOR, 'fieldset[role="radiogroup"]')
+    fieldsets = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'fieldset[role="radiogroup"]')))
     for fieldset in fieldsets:
-        legend = fieldset.find_element(By.TAG_NAME, 'legend')
-        question_text = legend.text.strip() if legend else "No question text found"
+        try:
+            legend = fieldset.find_element(By.TAG_NAME, 'legend')
+            question_text = legend.text.strip() if legend else "No question text found"
 
-        inputs = fieldset.find_elements(By.CSS_SELECTOR, 'input[type="radio"], input[type="checkbox"]')
-        options = []
-        for input_elem in inputs:
-            label = driver.find_element(By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')
-            option_text = label.text.strip() if label else "No label found"
+            inputs = fieldset.find_elements(By.CSS_SELECTOR, 'input[type="radio"], input[type="checkbox"]')
+            options = []
+            for input_elem in inputs:
+                try:
+                    label = driver.find_element(By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')
+                    option_text = label.text.strip() if label else "No label found"
+                except NoSuchElementException:
+                    option_text = "Label not found"
 
-            options.append({
-                'value': input_elem.get_attribute('value'),
-                'label': option_text,
-                'id': input_elem.get_attribute('id'),
-                'input_id': input_elem.get_attribute('id'),
-                'type': input_elem.get_attribute('type')
+                options.append({
+                    'value': input_elem.get_attribute('value'),
+                    'label': option_text,
+                    'id': input_elem.get_attribute('id'),
+                    'input_id': input_elem.get_attribute('id'),
+                    'type': input_elem.get_attribute('type')
+                })
+
+            questions.append({
+                'question': question_text,
+                'options': options,
+                'input_type': inputs[0].get_attribute('type') if inputs else 'unknown',
+                'fieldset_id': fieldset.get_attribute('id'),
+                'input_id': fieldset.get_attribute('id'),
             })
-
-        questions.append({
-            'question': question_text,
-            'options': options,
-            'input_type': inputs[0].get_attribute('type') if inputs else 'unknown',
-            'fieldset_id': fieldset.get_attribute('id'),
-            'input_id': fieldset.get_attribute('id')
-        })
+        except NoSuchElementException as e:
+            print(f"Error processing fieldset: {e}")
 
     # Handle selects, text inputs, and textareas
     inputs = driver.find_elements(By.CSS_SELECTOR, 'input[type="text"], textarea, select')
     for input_elem in inputs:
-        label = driver.find_element(By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')
-        question_text = label.text.strip() if label else "No label found"
+        try:
+            label = wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')))
+            question_text = label.text.strip() if label else "No label found"
 
-        if input_elem.tag_name == 'select':
-            select_obj = Select(input_elem)
-            options = [{'value': opt.get_attribute('value'), 'label': opt.text} for opt in select_obj.options]
-            input_type = 'select'
-        elif input_elem.tag_name == 'textarea':
-            options = []
-            input_type = 'textarea'
-        else:  # input type="text"
-            options = []
-            input_type = 'text'
+            if input_elem.tag_name == 'select':
+                select_obj = Select(input_elem)
+                options = [{'value': opt.get_attribute('value'), 'label': opt.text} for opt in select_obj.options]
+                input_type = 'select'
+            elif input_elem.tag_name == 'textarea':
+                options = []
+                input_type = 'textarea'
+            else:  # input type="text"
+                options = []
+                input_type = 'text'
 
-        questions.append({
-            'question': question_text,
-            'options': options,
-            'input_type': input_type,
-            'input_id': input_elem.get_attribute('id'),
-            'name': input_elem.get_attribute('name')
-        })
+            questions.append({
+                'question': question_text,
+                'options': options,
+                'input_type': input_type,
+                'input_id': input_elem.get_attribute('id'),
+                'name': input_elem.get_attribute('name')
+            })
+        except NoSuchElementException as e:
+            print(f"Error processing input: {e}")
 
     print(f"🔍 Extracted questions: ", questions)
     return questions
