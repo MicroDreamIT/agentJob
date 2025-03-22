@@ -12,6 +12,6 @@ if __name__ == "__main__":
     try:
         logged_in_driver = login_to_seek()
         if logged_in_driver:
-            search_jobs(logged_in_driver, what="web-developer-jobs", days=3)
+            search_jobs(logged_in_driver, what="software-engineer-jobs", days=3)
     finally:
         driver.quit()

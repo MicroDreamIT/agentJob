@@ -523,11 +523,11 @@ def get_openai_answers(questions):
     """
 
     response = OPENAI_CLIENT.chat.completions.create(
-        model="gpt-4",
+        model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": "You are an AI assistant helping with job applications."},
                   {"role": "user", "content": full_prompt}],
         temperature=0.5,
-        max_tokens=1000
+        max_tokens=1024
     )
 
     # ✅ Extract raw response content
