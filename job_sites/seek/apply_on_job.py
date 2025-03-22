@@ -147,10 +147,10 @@ def apply_on_job(driver, job_id, job_link):
                         print("✅ Step 2 in progress...")
                         apply_step_2_employer_questions(driver)
 
-                    time.sleep(1)
+                    time.sleep(3)
                     print("➡️ update_seek_profile in progress...")
                     update_seek_profile(driver)
-                    time.sleep(1)
+                    time.sleep(3)
                     print("➡️ review_and_submit in progress...")
                     review_and_submit(driver)
 
@@ -297,12 +297,12 @@ def apply_step_2_employer_questions(driver):
                 select = Select(input_field)
                 if select.first_selected_option.text.strip():
                     print(f"Skipping '{question_text}' as it is already selected.")
-                    continue
-                try:
-                    select.select_by_visible_text(answer)
-                    print(f"Selected '{answer}' for '{question_text}'")
-                except Exception as e:
-                    print(f"Failed to select '{answer}' for '{question_text}': {str(e)}")
+                else:
+                    try:
+                        select.select_by_visible_text(answer)
+                        print(f"Selected '{answer}' for '{question_text}'")
+                    except Exception as e:
+                        print(f"Failed to select '{answer}' for '{question_text}': {str(e)}")
             elif question_data['input_type'] == 'radio':
                 select_radio_option(driver, question_data, answer)
 
@@ -449,7 +449,7 @@ def get_openai_answers(questions):
                                                                               "text": "13 Years"},
         "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "Less than 1 year",
                                                                                  "text": "1 Year"},
-        "Which of the following statements best describes your right to work in Australia?": "Skip",
+        "Which of the following statements best describes your right to work in Australia?": {"dropdown": "I require sponsorship to work for a new employer (e.g. 482, 457)", "text":"I require sponsorship to work for a new employer (e.g. 482, 186)"},
         "Do you have a current Australian driver's licence?": "No",
         "Do you own or have regular access to a car?": "Yes",
         "How many years' experience do you have as a ServiceNow Developer?": "No experience",
@@ -477,6 +477,8 @@ def get_openai_answers(questions):
                                                                           "text": "1 Year"},
         "How many years' experience do you have working in an agile environment?": {"dropdown": "More than 5 years",
                                                                                     "text": "13 Years"},
+        "Have you completed a qualification in engineering?": {"dropdown": "Bachelor's degree",
+                                                                                    "text": "Bachelor's degree"},
 
     }
     # if app_env == 'test': return preset_test_data()
