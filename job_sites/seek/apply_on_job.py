@@ -14,6 +14,9 @@ from core.config import OPENAI_CLIENT, RESUME_TEXT, app_env
 from core.database import FailedJob, open_session
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 CV_TEXT = os.getenv("CV_TEXT")
 
@@ -325,6 +328,7 @@ def apply_step_2_employer_questions(driver):
 
     print("✅ Employer Questions Completed!")
 
+
 def select_radio_option(driver, question_data, answer):
     base_input_id = question_data['input_id']
     question_text = question_data['question']
@@ -351,11 +355,6 @@ def select_radio_option(driver, question_data, answer):
         print(f"Radio button with base ID '{base_input_id}' and answer '{answer}' not found for '{question_text}'")
     except Exception as e:
         print(f"An error occurred while trying to select the radio button for '{question_text}': {e}")
-
-
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
 
 
 def extract_questions_and_options(driver):
@@ -431,17 +430,17 @@ def extract_questions_and_options(driver):
 
 def preset_test_data():
     return {
-            "answers": [
-                {
-                    "question": "Are you open to working in a Sydney based office 2-3 times per week?",
-                    "answer": "Yes"
-                },
-                {
-                    "question": "Which of the following statements best describes your right to work in Australia?",
-                    "answer": "I require sponsorship to work for a new employer (e.g. 482, 457)"
-                }
-            ]
-        }
+        "answers": [
+            {
+                "question": "Are you open to working in a Sydney based office 2-3 times per week?",
+                "answer": "Yes"
+            },
+            {
+                "question": "Which of the following statements best describes your right to work in Australia?",
+                "answer": "I require sponsorship to work for a new employer (e.g. 482, 457)"
+            }
+        ]
+    }
 
 
 def get_openai_answers(questions):
@@ -450,7 +449,9 @@ def get_openai_answers(questions):
                                                                               "text": "13 Years"},
         "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "Less than 1 year",
                                                                                  "text": "1 Year"},
-        "Which of the following statements best describes your right to work in Australia?": {"dropdown": "I require sponsorship to work for a new employer (e.g. 482, 457)", "text":"I require sponsorship to work for a new employer (e.g. 482, 186)"},
+        "Which of the following statements best describes your right to work in Australia?": {
+            "dropdown": "I require sponsorship to work for a new employer (e.g. 482, 457)",
+            "text": "I require sponsorship to work for a new employer (e.g. 482, 186)"},
         "Do you have a current Australian driver's licence?": "No",
         "Do you own or have regular access to a car?": "Yes",
         "How many years' experience do you have as a ServiceNow Developer?": "No experience",
@@ -479,7 +480,7 @@ def get_openai_answers(questions):
         "How many years' experience do you have working in an agile environment?": {"dropdown": "More than 5 years",
                                                                                     "text": "13 Years"},
         "Have you completed a qualification in engineering?": {"dropdown": "Bachelor's degree",
-                                                                                    "text": "Bachelor's degree"},
+                                                               "text": "Bachelor's degree"},
 
     }
     # if app_env == 'test': return preset_test_data()
