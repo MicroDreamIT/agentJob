@@ -298,15 +298,16 @@ def apply_step_2_employer_questions(driver):
                 if select.first_selected_option.text.strip():
                     print(f"Skipping '{question_text}' as it is already selected.")
                 else:
-                    try:
-                        select.select_by_visible_text(answer)
-                        print(f"Selected '{answer}' for '{question_text}'")
-                    except Exception as e:
-                        print(f"Failed to select '{answer}' for '{question_text}': {str(e)}")
+                    select.select_by_visible_text(answer)
+                    print(f"Selected '{answer}' for '{question_text}'")
             elif question_data['input_type'] == 'radio':
                 select_radio_option(driver, question_data, answer)
 
             elif question_data['input_type'] == 'textarea':
+                input_field.clear()
+                input_field.send_keys(answer)
+                print(f"Filled textarea for '{question_text}' with '{answer}'")
+            elif question_data['input_type'] == 'text':
                 input_field.clear()
                 input_field.send_keys(answer)
                 print(f"Filled textarea for '{question_text}' with '{answer}'")
