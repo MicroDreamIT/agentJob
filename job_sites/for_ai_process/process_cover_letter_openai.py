@@ -32,6 +32,7 @@ def process_cover_letter_openai(job_details):
     
     
     Please dont write subject.
+    Please dont write 'as a founder of MicroDreamIT'
     try to start with the name, or the company name, Dear ....
     """
 

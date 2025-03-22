@@ -281,6 +281,7 @@ def apply_step_1_resume_cover_letter(driver, cover_letter_text):
 
 
 def apply_step_2_employer_questions(driver):
+    print("✅ Step 2 in inside...")
     questions = extract_questions_and_options(driver)
     print(f"🔍 Extracted questions: ", questions)
     response = get_openai_answers(questions)
@@ -362,6 +363,7 @@ def select_radio_option(driver, question_data, answer):
 
 
 def extract_questions_and_options(driver):
+    print("✅ Step 2 in extracting question...")
     questions = []
     wait = WebDriverWait(driver, 10)
 
@@ -487,6 +489,7 @@ def get_openai_answers(questions):
                                                                                  "text": "13 Years"}
 
     }
+    print("✅ Step 2 in sending response to openai...")
     # if app_env == 'test': return preset_test_data()
 
     # Format the prompt for OpenAI
