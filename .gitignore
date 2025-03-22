@@ -36,5 +36,3 @@ pip-selfcheck.json
 .env
 data/
 .testenv
-
-!/.testenv
