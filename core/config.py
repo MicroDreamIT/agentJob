@@ -2,16 +2,17 @@ import os
 import openai
 from dotenv import load_dotenv
 
-
+os.environ.setdefault('APP_ENV', 'production')
 def load_environment():
     """ Load the appropriate environment variables based on the deployment context. """
-    app_env = 'production'
+    print(f"Initial APP_ENV: {os.getenv('APP_ENV')}")
     if os.getenv('APP_ENV') == 'production'.lower():
         dotenv_path = '.env'
     else:
         dotenv_path = '.testenv'
-    load_dotenv(dotenv_path=dotenv_path)
-
+    load_dotenv(dotenv_path=dotenv_path, override=True)
+    print(f"Loaded {dotenv_path}")
+    print(f"Updated APP_ENV: {os.getenv('APP_ENV')}")
 # Call the function to load the environment at the start
 load_environment()
 
