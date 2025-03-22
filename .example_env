@@ -1,0 +1,74 @@
+DATABASE_URL=sqlite:///data/jobs.db
+CHROME_DRIVER_PATH="/usr/local/bin/chromedriver"
+RESUME_TEXT="14/3/25 - sample.pdf"
+OPENAI_API_KEY="api_key"
+DEBUG=True
+APP_ENV=production
+
+CV_TEXT="
+Jordan K. Thompson
+Senior Full Stack Developer
+
+Contact:
+Email: jordan.k.thompson.dev@gmail.com
+Phone: +1 305 998 3004
+LinkedIn: https://www.linkedin.com/in/jordankthompson/
+GitHub: https://github.com/CodeWithJordan
+Upwork: https://www.upwork.com/freelancers/jordankthompson
+Freelancer: https://www.freelancer.com/u/jordandev
+
+Summary:
+I am a senior full stack developer with over 15 years of experience in mobile and web applications, focusing on healthcare, fintech, and retail industries. I have collaborated with various tech startups and multinational corporations, bringing deep knowledge in scalable architecture, seamless user experience design, and advanced data solutions.
+
+Work Experience:
+
+Independent Full Stack Developer - Upwork (03/2019 - Present)
+
+Accumulated over 4200 development hours.
+Engineered comprehensive API solutions and performed integration of diverse services.
+Notably contributed to MedTech Inc. (3200 hours), designing a scalable cloud-based patient care system.
+Developed a dynamic e-commerce platform for RetailPro (1000 hours).
+CTO & Co-Founder - DevInnovate Technologies (01/2010 - 12/2023)
+
+Spearheaded the creation of fintech solutions that increased client revenue by 40%.
+Led the development of a smart parking system for city municipalities.
+Innovated an IoT-enabled supply chain system for large-scale manufacturers.
+Freelance Developer - Freelancer.com (02/2014 - 02/2019)
+
+Delivered 850+ diverse web projects including CMS, custom-built applications, and e-commerce platforms.
+Developed an interactive learning platform using React and Node.js.
+Designed a comprehensive travel booking system.
+Notable Projects:
+
+FinTrack: A robust financial planning tool recognized by the Fintech Innovation Awards.
+SmartPark Systems: An integrated parking management solution.
+RetailPulse: An AI-driven predictive analytics tool for retail inventory management.
+HealthNet: A hospital management system enhancing patient and data workflows.
+Certifications:
+
+Certified ScrumMaster (CSM)
+Microsoft Certified: Azure Solutions Architect
+PMP Certified Project Manager
+Oracle Certified Java Programmer
+Education:
+
+Master of Science in Computer Science, University of Florida, Gainesville (2010-2012)
+Bachelor of Science in Software Engineering, Georgia Institute of Technology, Atlanta (2000-2004)
+Skills:
+
+Backend: Node.js, Ruby on Rails, ASP.NET, Spring Boot
+Frontend: Angular, Svelte, React.js, Ember.js
+Programming: Ruby, C#, Java, Scala
+Databases: Oracle, SQL Server, Firebase, Cassandra
+Security: SAML, Kerberos, PGP
+DevOps: CI/CD, Jenkins, Terraform
+AI: TensorFlow, PyTorch, Microsoft Azure AI
+Achievements:
+
+Awarded 'Tech Innovator of the Year' by TechCommunity Online
+Co-organizer & Speaker at Annual DevCon Miami
+References:
+
+Prof. Emily Stanton (MIT Computer Science Dept.) - emily.stanton@mit.edu
+Dr. Lucas Moran (Stanford School of Engineering) - lucas.moran@stanford.edu
+"

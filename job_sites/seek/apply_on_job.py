@@ -3,13 +3,14 @@ import os
 import json
 import time
 from difflib import get_close_matches
+from os import getenv
 
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 
-from core.config import OPENAI_CLIENT, RESUME_TEXT
+from core.config import OPENAI_CLIENT, RESUME_TEXT, app_env
 from core.database import FailedJob, open_session
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
@@ -304,13 +305,7 @@ def apply_step_2_employer_questions(driver):
                     print(f"Failed to select '{answer}' for '{question_text}': {str(e)}")
             elif question_data['input_type'] == 'radio':
                 # Process radio buttons by finding the correct option to select
-                option_to_select = driver.find_element(By.XPATH, f"//input[@id='{input_id}' and @value='{answer}']")
-                if option_to_select:
-                    if not option_to_select.is_selected():
-                        ActionChains(driver).move_to_element(option_to_select).click().perform()
-                        print(f"Selected radio button '{answer}' for '{question_text}'")
-                else:
-                    print(f"Radio button '{answer}' not found for '{question_text}'")
+                select_radio_option(driver, question_data, answer)
 
             elif question_data['input_type'] == 'textarea':
                 input_field.clear()
@@ -330,6 +325,30 @@ def apply_step_2_employer_questions(driver):
 
     print("✅ Employer Questions Completed!")
 
+def select_radio_option(driver, question_data, answer):
+    input_id = question_data['input_id']
+    answer = question_data['answer']
+    question_text = question_data['question']
+
+    try:
+        # Locate the radio button by ID and value
+        xpath_expression = f"//input[@id='{input_id}' and @value='{answer}']"
+        option_to_select = driver.find_element(By.XPATH, xpath_expression)
+
+        # Check if the radio button is already selected
+        if not option_to_select.is_selected():
+            # Use ActionChains to perform the click if it is not already selected
+            ActionChains(driver).move_to_element(option_to_select).click().perform()
+            print(f"Selected radio button '{answer}' for '{question_text}'")
+        else:
+            print(f"Radio button '{answer}' for '{question_text}' is already selected")
+
+    except NoSuchElementException:
+        # Handle the case where the radio button is not found
+        print(f"Radio button with ID '{input_id}' and value '{answer}' not found for '{question_text}'")
+    except Exception as e:
+        # General exception handling to catch any other issues during the operation
+        print(f"An error occurred while trying to select the radio button for '{question_text}': {e}")
 
 def extract_questions_and_options(driver):
     questions = []
@@ -350,6 +369,7 @@ def extract_questions_and_options(driver):
                 'value': input_elem.get_attribute('value'),
                 'label': option_text,
                 'id': input_elem.get_attribute('id'),
+                'input_id': input_elem.get_attribute('id'),
                 'type': input_elem.get_attribute('type')
             })
 
@@ -357,7 +377,8 @@ def extract_questions_and_options(driver):
             'question': question_text,
             'options': options,
             'input_type': inputs[0].get_attribute('type') if inputs else 'unknown',
-            'fieldset_id': fieldset.get_attribute('id')
+            'fieldset_id': fieldset.get_attribute('id'),
+            'input_id': fieldset.get_attribute('id')
         })
 
     # Handle selects, text inputs, and textareas
@@ -389,6 +410,21 @@ def extract_questions_and_options(driver):
     return questions
 
 
+def preset_test_data():
+    return {
+            "answers": [
+                {
+                    "question": "Are you open to working in a Sydney based office 2-3 times per week?",
+                    "answer": "Yes"
+                },
+                {
+                    "question": "Which of the following statements best describes your right to work in Australia?",
+                    "answer": "I require sponsorship to work for a new employer (e.g. 482, 457)"
+                }
+            ]
+        }
+
+
 def get_openai_answers(questions):
     predefined_answers = {
         "How many years' experience do you have as a full stack developer?": {"dropdown": "More than 5 years",
@@ -417,12 +453,15 @@ def get_openai_answers(questions):
         "Are you willing to relocate": "Yes",
         "How many years' experience do you have as an applications developer?": {"dropdown": "More than 5 years",
                                                                                  "text": "13 Years"},
-        "How many years' experience do you have as a .NET developer?": {"dropdown": "Less than 1 year", "text": "1 Year"},
-        "How many years' experience do you have as a NodeJs developer?": {"dropdown": "Less than 1 year", "text": "1 Year"},
-        "How many years' experience do you have working in an agile environment?": {"dropdown": "More than 5 years", "text": "13 Years"},
-
+        "How many years' experience do you have as a .NET developer?": {"dropdown": "Less than 1 year",
+                                                                        "text": "1 Year"},
+        "How many years' experience do you have as a NodeJs developer?": {"dropdown": "Less than 1 year",
+                                                                          "text": "1 Year"},
+        "How many years' experience do you have working in an agile environment?": {"dropdown": "More than 5 years",
+                                                                                    "text": "13 Years"},
 
     }
+    # if app_env == 'test': return preset_test_data()
 
     # Format the prompt for OpenAI
     full_prompt = f"""
@@ -438,7 +477,8 @@ def get_openai_answers(questions):
 
     {json.dumps(predefined_answers, indent=2)}
 
-    Please return the best-matching answers in structured JSON format. If the predefined answer is slightly different from the dropdown/checkbox options, select the closest match.
+    Please return the best-matching answers of only employer questions in structured JSON format. If the predefined answer is slightly different from the dropdown/checkbox options, select the closest match.
+    with input id or id for the input field as well.
 
     Example output:
     {{

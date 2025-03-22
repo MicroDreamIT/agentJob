@@ -1,40 +1,44 @@
+import os
 from datetime import datetime
 from selenium.common import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+
+from core.config import app_env
 from .apply_on_job import apply_on_job, apply_step_1_resume_cover_letter, apply_step_2_employer_questions
 from core.database import Job, open_session, close_session
 
-
-def search_jobs(driver, what="full-stack-developer", days=1):
-    base_url = "https://www.seek.com.au"
-    page_number = 1
-    session = open_session()
-
-    #test_begin
+def search_jobs_test(driver, db_session):
     cover_letter = "I am a professional HR assistant helping to craft cover letters."
-    driver.get('https://www.seek.com.au/job/82897618/apply/role-requirements?sol=0c58f7151b4c526d7e0a8ba11f2db9ff1b81f5df')
+    driver.get(
+        'https://www.seek.com.au/job/82917147/apply/role-requirements?sol=0c58f7151b4c526d7e0a8ba11f2db9ff1b81f5df')
     # job_detail_returns = apply_on_job(driver, '82897618')
     success_if = apply_step_1_resume_cover_letter(driver, cover_letter)
     if success_if:
         apply_step_2_employer_questions(driver)
-
+    close_session(db_session)
     return True
-    #test_end
 
+def search_jobs(driver, what="full-stack-developer", days=1):
+    db_session = open_session()
+    if app_env == "test": search_jobs_test(driver, db_session)
+
+    base_url = "https://www.seek.com.au"
+    page_number = 1
+    db_session = open_session()
     while True:
         query = f"{what}-jobs?daterange={days}&page={page_number}"
         full_url = f"{base_url}/{query}"
         driver.get(full_url)
         print(f"Scanning page {page_number}...")
-        process_job_listings(driver, session)
+        process_job_listings(driver, db_session)
 
         page_number += 1
         if not has_next_page(driver):
             break
 
-    close_session(session)
+    close_session(db_session)
 
 
 def process_job_listings(driver, session):
