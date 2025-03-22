@@ -2,9 +2,10 @@ import os
 import openai
 from dotenv import load_dotenv
 
+
 def load_environment():
     """ Load the appropriate environment variables based on the deployment context. """
-    if os.getenv('APP_ENV') == 'local':
+    if os.getenv('APP_ENV') == 'production'.lower():
         dotenv_path = '.env'
     else:
         dotenv_path = '.testenv'

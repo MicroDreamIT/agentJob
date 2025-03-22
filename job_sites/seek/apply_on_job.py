@@ -302,6 +302,16 @@ def apply_step_2_employer_questions(driver):
                     print(f"Selected '{answer}' for '{question_text}'")
                 except Exception as e:
                     print(f"Failed to select '{answer}' for '{question_text}': {str(e)}")
+            elif question_data['input_type'] == 'radio':
+                # Process radio buttons by finding the correct option to select
+                option_to_select = driver.find_element(By.XPATH, f"//input[@id='{input_id}' and @value='{answer}']")
+                if option_to_select:
+                    if not option_to_select.is_selected():
+                        ActionChains(driver).move_to_element(option_to_select).click().perform()
+                        print(f"Selected radio button '{answer}' for '{question_text}'")
+                else:
+                    print(f"Radio button '{answer}' not found for '{question_text}'")
+
             elif question_data['input_type'] == 'textarea':
                 input_field.clear()
                 input_field.send_keys(answer)

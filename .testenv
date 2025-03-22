@@ -4,7 +4,7 @@ SEEK_EMAIL="cristianaanna@gmail.com"
 RESUME_TEXT="18/3/25 - Resume-sample.pdf"
 OPENAI_API_KEY="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"
 DEBUG=True
-APP_ENV=local
+APP_ENV=test
 
 CV_TEXT="
 Jordan K. Thompson
