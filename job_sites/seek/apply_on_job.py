@@ -3,17 +3,15 @@ import os
 import json
 import time
 from difflib import get_close_matches
-from os import getenv
 
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait, Select
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
 
-from core.config import OPENAI_CLIENT, RESUME_TEXT, app_env
+from core.config import OPENAI_CLIENT, RESUME_TEXT
 from core.database import FailedJob, open_session
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
@@ -451,6 +449,10 @@ def get_openai_answers(questions):
     predefined_answers = {
         "How many years' experience do you have as a full stack developer?": {"dropdown": "More than 5 years",
                                                                               "text": "13 Years"},
+        "How many years' experience do you have as a front end software developer?": {"dropdown": "More than 5 years",
+                                                                              "text": "13 Years"},
+        "How many years' experience do you have as a back end software developer?": {"dropdown": "More than 5 years",
+                                                                              "text": "13 Years"},
         "How many years' experience do you have as a Ruby on Rails Developer?": {"dropdown": "Less than 1 year",
                                                                                  "text": "1 Year"},
         "Which of the following statements best describes your right to work in Australia?": {
@@ -486,7 +488,7 @@ def get_openai_answers(questions):
         "Have you completed a qualification in engineering?": {"dropdown": "Bachelor's degree",
                                                                "text": "Bachelor's degree"},
         "How many years' experience do you have as an eCommerce Specialist?": {"dropdown": "More than 5 years",
-                                                                                 "text": "13 Years"}
+                                                                                 "text": "13 Years"},
 
     }
     print("✅ Step 2 in sending response to openai...")

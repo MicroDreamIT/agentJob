@@ -11,9 +11,11 @@ from core.database import Job, open_session, close_session
 
 def search_jobs_test(driver, db_session):
     cover_letter = "I am a professional HR assistant helping to craft cover letters."
+    job_id=82978768
     driver.get(
-        'https://www.seek.com.au/job/82917147/apply/role-requirements?sol=0c58f7151b4c526d7e0a8ba11f2db9ff1b81f5df')
-    # job_detail_returns = apply_on_job(driver, '82897618')
+        f"https://www.seek.com.au/job/{job_id}/apply/role-requirements?sol=0c58f7151b4c526d7e0a8ba11f2db9ff1b81f5df")
+    #job_detail_returns = apply_on_job(driver, '82897618')
+
     success_if = apply_step_1_resume_cover_letter(driver, cover_letter)
     if success_if:
         apply_step_2_employer_questions(driver)
@@ -22,7 +24,9 @@ def search_jobs_test(driver, db_session):
 
 def search_jobs(driver, what="full-stack-developer", days=1, failed_job=None):
     db_session = open_session()
-    if app_env == "test": search_jobs_test(driver, db_session)
+    if app_env == "test":
+        search_jobs_test(driver, db_session)
+        return True
 
     base_url = "https://www.seek.com.au"
     page_number = 1
@@ -48,20 +52,23 @@ def process_job_listings(driver, session):
 
     for job in job_list:
         try:
-            job_id = job.get_attribute("data-job-id")
-            job_title_link = job.find_element(By.CSS_SELECTOR, "a[data-automation='jobTitle']")
-            job_title = job_title_link.text
-            job_link = job_title_link.get_attribute("href")
-
-            if job_id:
-                process_job(session, driver, job_id, job_title, job_link)
-            else:
-                raise ValueError("Job ID not found or is None")
+            get_job_navigation_detail(driver, job, session)
 
         except Exception as e:
             print(f"Error processing job: {e}")
             print(f"Job HTML: {job}")  # Print part of the job's HTML for debugging
             continue
+
+
+def get_job_navigation_detail(driver, job, session):
+    job_id = job.get_attribute("data-job-id")
+    job_title_link = job.find_element(By.CSS_SELECTOR, "a[data-automation='jobTitle']")
+    job_title = job_title_link.text
+    job_link = job_title_link.get_attribute("href")
+    if job_id:
+        process_job(session, driver, job_id, job_title, job_link)
+    else:
+        raise ValueError("Job ID not found or is None")
 
 
 def process_job(session, driver, job_id, job_title, job_link):
