@@ -36,8 +36,11 @@ if __name__ == "__main__":
             )
             on_seek, final_url = check_for_redirection(logged_in_driver, seek_apply_url)
             if on_seek:
-                click_quick_apply_button(logged_in_driver)
+                # click_quick_apply_button(logged_in_driver)
                 job_description = get_job_description(logged_in_driver)
+                if not job_description:
+                    print("❌ Failed to get job description")
+                    continue
                 cover_letter = process_cover_letter_openai(job_description)
                 success = apply_step_1_resume_cover_letter(logged_in_driver, cover_letter)
                 if check_for_answer_questions_text(logged_in_driver):

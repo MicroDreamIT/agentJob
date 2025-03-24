@@ -1,53 +1,58 @@
 from selenium.webdriver import ActionChains
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
-def get_job_description(driver):
-    click_view_job_description(driver)
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[id='jobDescription-close']"))
-    )
-    try:
-        # Wait for the job description modal to be visible
-        job_details_element = driver.find_element(By.CSS_SELECTOR, "div[id='jobDescription']")
-        job_text = job_details_element.text.strip()
-        click_to_close_job_description(driver)
-        print(f"✅ Extracted job description: {job_text}")
-        return job_text
-
-    except Exception as e:
-        print(f"Failed to extract job description: {str(e)}")
+def get_job_description(driver, timeout=15):
+    if not click_view_job_description(driver):
+        print("⚠️ Unable to click 'View job description'")
         return None
 
-def click_to_close_job_description(driver):
-    close_button = driver.find_element(By.ID, "jobDescription-close")
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable(close_button))
+    try:
+        # Wait explicitly for the modal containing the description to be visible
+        WebDriverWait(driver, timeout).until(
+            EC.visibility_of_element_located((By.ID, "jobDescription"))
+        )
 
-    # Optional: Ensure the button is in view
-    ActionChains(driver).move_to_element(close_button).perform()
+        job_details_element = driver.find_element(By.ID, "jobDescription")
+        job_text = job_details_element.text.strip()
+        print("✅ Successfully extracted job description.")
 
-    # Click the button to close the modal
-    close_button.click()
+        click_to_close_job_description(driver)
 
+        return job_text
+
+    except TimeoutException:
+        print("⚠️ Timeout: Job description modal did not appear.")
+        return None
+    except Exception as e:
+        print(f"⚠️ Unexpected error while extracting job description: {e}")
+        return None
 
 def click_view_job_description(driver):
     try:
-        # Wait until the text is visible and the element is clickable
-        button = WebDriverWait(driver, 1).until(
+        button = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.XPATH, "//span[text()='View job description']"))
         )
-
-        # Use ActionChains to ensure visibility and reach if needed
-        ActionChains(driver).move_to_element(button).perform()
-
-        # Click the button
-        button.click()
+        ActionChains(driver).move_to_element(button).click().perform()
         print("✅ Clicked 'View job description'")
-
-
+        return True
+    except TimeoutException:
+        print("⚠️ Timeout: 'View job description' button not clickable.")
+        return False
     except Exception as e:
-        print(f"Failed to click 'View job description': {str(e)}")
+        print(f"⚠️ Failed to click 'View job description': {e}")
         return False
 
-    return True
+def click_to_close_job_description(driver):
+    try:
+        close_button = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.ID, "jobDescription-close"))
+        )
+        ActionChains(driver).move_to_element(close_button).click().perform()
+        print("✅ Closed job description modal.")
+        return True
+    except Exception as e:
+        print(f"⚠️ Failed to close job description modal: {e}")
+        return False
