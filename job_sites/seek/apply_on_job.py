@@ -492,6 +492,7 @@ def get_openai_answers(questions):
         "How many years' experience do you have as an eCommerce Specialist?": {"dropdown": "More than 5 years",
                                                                                  "text": "13 Years"},
         "How many years' experience do you have as an Implementation Specialist?": {"dropdown": "More than 5 years"},
+        
 
     }
     print("✅ Step 2 in sending response to openai...")
@@ -514,7 +515,7 @@ def get_openai_answers(questions):
     Please return the best-matching answers of only employer questions in structured JSON format. If the predefined answer is slightly different from the dropdown/checkbox options, select the closest match from the CV.
     with input id or id for the input field as well.
     If the question is not found in the predefined answers or CV, then select lowest value from the dropdown, or write n/a or 0.
-
+    Anything about Security Clearance, select No. or write no
     Example output:
     {{
       "answers": [

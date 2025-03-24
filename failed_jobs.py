@@ -19,16 +19,27 @@ from job_sites.seek.login import login_to_seek
 from sqlalchemy import select
 
 if __name__ == "__main__":
+    table_name = input("Enter the table name: 1. Job 2. FailedJob")
+    if table_name == '1':
+        table = Job
+    else:
+        table = FailedJob
+
     logged_in_driver = login_to_seek()
     if logged_in_driver:
         session = Session(engine)
 
-        not_quick_applies = select(Job).filter(
-            Job.is_quick_apply == 0,
-            Job.provider == 'SEEK'
-        )
+        if table == Job:
+            rows = select(Job).filter(
+                Job.is_quick_apply == 0,
+                Job.provider == 'SEEK'
+            )
+        else:
+            rows = select(FailedJob).filter(
+                FailedJob.provider == 'SEEK'
+            )
 
-        for fail_job in session.scalars(not_quick_applies):
+        for fail_job in session.scalars(rows):
             print(f"➡️Processing job: {fail_job.link}, job_id: {fail_job.provider_id}")
             seek_apply_url = f"https://www.seek.com.au/job/{fail_job.provider_id}/apply/"
             logged_in_driver.get(
@@ -62,7 +73,10 @@ if __name__ == "__main__":
                 # generate cover letter
 
                 try:
-                    fail_job.is_quick_apply = 1
+                    if table == Job:
+                        fail_job.is_quick_apply = 1
+                    else:
+                        session.delete(fail_job)
                     session.commit()
                 except Exception as e:
                     print(f"Error applying for job: {e}")
