@@ -38,7 +38,7 @@ def process_cover_letter_openai(job_details):
 
     try:
         response = OPENAI_CLIENT.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini-2024-07-18",
             messages=[
                 {"role": "system", "content": "You are a professional HR assistant helping to craft cover letters."},
                 {"role": "user", "content": full_prompt}
@@ -48,7 +48,7 @@ def process_cover_letter_openai(job_details):
         )
 
         cover_letter = response.choices[0].message.content.strip()
-        # print(cover_letter)
+        print(f"cover letter: {cover_letter}")
         return cover_letter
 
     except openai.OpenAIError as e:

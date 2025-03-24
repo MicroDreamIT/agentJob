@@ -3,6 +3,22 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
+def get_job_description(driver):
+    click_view_job_description(driver)
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[id='jobDescription-close']"))
+    )
+    try:
+        # Wait for the job description modal to be visible
+        job_details_element = driver.find_element(By.CSS_SELECTOR, "div[id='jobDescription']")
+        job_text = job_details_element.text.strip()
+        click_to_close_job_description(driver)
+        print(f"✅ Extracted job description: {job_text}")
+        return job_text
+
+    except Exception as e:
+        print(f"Failed to extract job description: {str(e)}")
+        return None
 
 def click_to_close_job_description(driver):
     close_button = driver.find_element(By.ID, "jobDescription-close")
@@ -13,31 +29,6 @@ def click_to_close_job_description(driver):
 
     # Click the button to close the modal
     close_button.click()
-
-
-def get_job_description(driver):
-    click_view_job_description(driver)
-    WebDriverWait(driver, 1).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[id='jobDescription-close']"))
-    )
-    try:
-        # Wait for the job description modal to be visible
-        modal_xpath = "//div[@id='jobDescription_desc']"  # Adjust if needed based on actual modal content ID
-        job_description_element = WebDriverWait(driver, 1).until(
-            EC.visibility_of_element_located((By.XPATH, modal_xpath))
-        )
-
-        # Extract the text from the modal
-        job_description_text = job_description_element.text
-        print("Job Description Extracted:", job_description_text)
-
-        click_to_close_job_description(driver)
-
-        return job_description_text
-
-    except Exception as e:
-        print(f"Failed to extract job description: {str(e)}")
-        return None
 
 
 def click_view_job_description(driver):

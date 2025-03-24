@@ -525,7 +525,7 @@ def get_openai_answers(questions):
     """
 
     response = OPENAI_CLIENT.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini-2024-07-18",
         messages=[{"role": "system", "content": "You are an AI assistant helping with job applications."},
                   {"role": "user", "content": full_prompt}],
         temperature=0.5,
