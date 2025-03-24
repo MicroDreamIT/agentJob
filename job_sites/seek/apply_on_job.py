@@ -361,43 +361,45 @@ def select_radio_option(driver, question_data, answer):
 
 
 def extract_questions_and_options(driver):
-    print("✅ Step 2 in extracting question...")
+    print("✅ Step 2 extracting questions...")
     questions = []
     wait = WebDriverWait(driver, 10)
 
-    # Handle fieldsets for radio or checkbox groups
-    fieldsets = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'fieldset[role="radiogroup"]')))
-    for fieldset in fieldsets:
-        try:
-            legend = fieldset.find_element(By.TAG_NAME, 'legend')
-            question_text = legend.text.strip() if legend else "No question text found"
+    # Handle fieldsets for radio or checkbox groups (optional existence)
+    fieldsets = driver.find_elements(By.CSS_SELECTOR, 'fieldset[role="radiogroup"]')
+    if fieldsets:
+        for fieldset in fieldsets:
+            try:
+                legend = fieldset.find_element(By.TAG_NAME, 'legend')
+                question_text = legend.text.strip() if legend else "No question text found"
 
-            inputs = fieldset.find_elements(By.CSS_SELECTOR, 'input[type="radio"], input[type="checkbox"]')
-            options = []
-            for input_elem in inputs:
-                try:
-                    label = driver.find_element(By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')
-                    option_text = label.text.strip() if label else "No label found"
-                except NoSuchElementException:
-                    option_text = "Label not found"
+                inputs = fieldset.find_elements(By.CSS_SELECTOR, 'input[type="radio"], input[type="checkbox"]')
+                options = []
+                for input_elem in inputs:
+                    try:
+                        label = driver.find_element(By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')
+                        option_text = label.text.strip()
+                    except NoSuchElementException:
+                        option_text = "Label not found"
 
-                options.append({
-                    'value': input_elem.get_attribute('value'),
-                    'label': option_text,
-                    'id': input_elem.get_attribute('id'),
-                    'input_id': input_elem.get_attribute('id'),
-                    'type': input_elem.get_attribute('type')
+                    options.append({
+                        'value': input_elem.get_attribute('value'),
+                        'label': option_text,
+                        'id': input_elem.get_attribute('id'),
+                        'type': input_elem.get_attribute('type')
+                    })
+
+                questions.append({
+                    'question': question_text,
+                    'options': options,
+                    'input_type': inputs[0].get_attribute('type') if inputs else 'unknown',
+                    'fieldset_id': fieldset.get_attribute('id'),
+                    'input_id': fieldset.get_attribute('id'),
                 })
-
-            questions.append({
-                'question': question_text,
-                'options': options,
-                'input_type': inputs[0].get_attribute('type') if inputs else 'unknown',
-                'fieldset_id': fieldset.get_attribute('id'),
-                'input_id': fieldset.get_attribute('id'),
-            })
-        except NoSuchElementException as e:
-            print(f"Error processing fieldset: {e}")
+            except NoSuchElementException as e:
+                print(f"⚠️ Error processing fieldset: {e}")
+    else:
+        print("ℹ️ No radio groups found, skipping radio group questions.")
 
     # Handle selects, text inputs, and textareas
     inputs = driver.find_elements(By.CSS_SELECTOR, 'input[type="text"], textarea, select')

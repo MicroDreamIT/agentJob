@@ -7,7 +7,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 def click_quick_apply_button(driver):
     try:
         # Wait until the text is visible and the element is clickable
-        button = WebDriverWait(driver, 1).until(
+        button = WebDriverWait(driver, 2).until(
             EC.element_to_be_clickable((By.XPATH, "//span[text()='Quick apply']"))
         )
 
