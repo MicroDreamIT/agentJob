@@ -19,7 +19,7 @@ from job_sites.seek.login import login_to_seek
 from sqlalchemy import select
 
 if __name__ == "__main__":
-    table_name = input("Enter the table name: 1. Job 2. FailedJob")
+    table_name = input("Enter the table name: 1. Job 2. FailedJob: ")
     if table_name == '1':
         table = Job
     else:

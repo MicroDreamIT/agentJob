@@ -9,19 +9,6 @@ from core.config import app_env
 from .apply_on_job import apply_on_job, apply_step_1_resume_cover_letter, apply_step_2_employer_questions
 from core.database import Job, open_session, close_session
 
-def search_jobs_test(driver, db_session):
-    cover_letter = "I am a professional HR assistant helping to craft cover letters."
-    job_id=82978768
-    driver.get(
-        f"https://www.seek.com.au/job/{job_id}/apply/role-requirements?sol=0c58f7151b4c526d7e0a8ba11f2db9ff1b81f5df")
-    #job_detail_returns = apply_on_job(driver, '82897618')
-
-    success_if = apply_step_1_resume_cover_letter(driver, cover_letter)
-    if success_if:
-        apply_step_2_employer_questions(driver)
-    close_session(db_session)
-    return True
-
 def search_jobs(driver, what="full-stack-developer", days=1, failed_job=None):
     db_session = open_session()
     if app_env == "test":
@@ -43,6 +30,20 @@ def search_jobs(driver, what="full-stack-developer", days=1, failed_job=None):
             break
 
     close_session(db_session)
+
+
+def search_jobs_test(driver, db_session):
+    cover_letter = "I am a professional HR assistant helping to craft cover letters."
+    job_id=82978768
+    driver.get(
+        f"https://www.seek.com.au/job/{job_id}/apply/role-requirements?sol=0c58f7151b4c526d7e0a8ba11f2db9ff1b81f5df")
+    #job_detail_returns = apply_on_job(driver, '82897618')
+
+    success_if = apply_step_1_resume_cover_letter(driver, cover_letter)
+    if success_if:
+        apply_step_2_employer_questions(driver)
+    close_session(db_session)
+    return True
 
 
 def process_job_listings(driver, session):
