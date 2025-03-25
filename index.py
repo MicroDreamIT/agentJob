@@ -10,6 +10,17 @@ from job_sites.seek.login import login_to_seek
 from job_sites.seek.search_jobs import search_jobs
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+import threading
+import time
+import subprocess
+
+# ========== Helper: Minimize Chrome ==========
+def minimize_chrome():
+    try:
+        # Update the path to where your actual AppleScript file is saved
+        subprocess.run(['osascript', 'minimize_chrome.scpt'], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to minimize Chrome: {e}")
 
 if __name__ == "__main__":
     service = Service(CHROME_DRIVER_PATH)
@@ -17,13 +28,16 @@ if __name__ == "__main__":
     logged_in_driver = login_to_seek(driver)
     whats = [
         # 'full-stack-developer',
-        'vuejs',
-        # 'data-analyst',
-        # 'reactjs',
+        # 'vuejs',
+        'software-developer',
         # 'python',
-        # 'laravel',
         # 'django',
+        # 'laravel',
         # 'software-engineer',
+        # 'web-developer',
+        # 'front-end-developer',
+        # 'back-end-developer',
+        # 'reactjs',
         # 'devops',
         # 'aws',
         # 'ibm',
@@ -31,13 +45,13 @@ if __name__ == "__main__":
         # 'it-administrator',
         # 'it-manager',
         # 'it-consultant',
-        # 'software-developer',
-        # 'web-developer',
-        # 'front-end-developer',
-        # 'back-end-developer',
+        # 'data-analyst',
     ]
+    minimize_chrome()
     if logged_in_driver:
         for what in whats:
+
             # logged_in_driver.minimize_window()
             search_jobs(logged_in_driver, what=what, days=3)
+            minimize_chrome()
     driver.quit()
