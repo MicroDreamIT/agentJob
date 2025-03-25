@@ -1,16 +1,13 @@
-from datetime import datetime
-from sqlite3 import IntegrityError
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import pickle
 import time
+import pickle
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+
 from core.config import CHROME_DRIVER_PATH, SEEK_EMAIL
-from core.database import create_connection, Job, close_connection
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support import expected_conditions as EC
 
 COOKIE_FILE = "job_sites/seek/seek_cookies.pkl"
 
@@ -21,11 +18,10 @@ def scroll_to_element_and_click(driver, element):
 
 
 
-def login_to_seek():
+def login_to_seek(driver):
     """Logs into Seek by navigating from homepage, entering email, and waiting for OTP."""
 
-    service = Service(CHROME_DRIVER_PATH)
-    driver = webdriver.Chrome(service=service)
+
 
     # Step 1: Open Seek homepage
     driver.get("https://www.seek.com.au/")
@@ -76,8 +72,25 @@ def login_to_seek():
         driver.quit()
         return
 
-    # Step 4: Wait for user to manually enter OTP
-    input("🔑 Enter OTP manually in the browser, then press Enter here...")
+    # User manually enters OTP from email
+    otp_code = input("Enter the 6-digit OTP: ").strip()
+    assert len(otp_code) == 6, "OTP must be exactly 6 digits."
+
+    # Wait briefly for OTP input field to be ready
+    time.sleep(2)
+
+    # Target the hidden single input (correct way)
+    otp_input = driver.find_element(By.CSS_SELECTOR, 'input[aria-label="verification input"]')
+    otp_input.send_keys(otp_code)
+
+    # Submit the OTP (pressing Enter often works)
+    otp_input.send_keys(Keys.RETURN)
+
+    # Wait for login to complete
+    time.sleep(5)
+
+    print(f"Logged in page title: {driver.title}")
+
 
     # Step 5: Save cookies after successful login
     cookies = driver.get_cookies()

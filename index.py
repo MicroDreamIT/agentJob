@@ -1,3 +1,5 @@
+from core.config import CHROME_DRIVER_PATH
+
 job_sites = {
     1: 'seek',
     2: 'indeed'
@@ -6,30 +8,33 @@ job_sites = {
 from selenium import webdriver
 from job_sites.seek.login import login_to_seek
 from job_sites.seek.search_jobs import search_jobs
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 if __name__ == "__main__":
-    driver = webdriver.Chrome()  # Ensure ChromeDriver is in your PATH or specify the path to the driver
-    logged_in_driver = login_to_seek()
+    service = Service(CHROME_DRIVER_PATH)
+    driver = webdriver.Chrome(service=service)
+    logged_in_driver = login_to_seek(driver)
     whats = [
-        'full-stack-developer-jobs',
-        # 'data-analyst-jobs',
-        # 'vuejs-jobs',
-        # 'reactjs-jobs',
-        # 'python-jobs',
-        # 'laravel-jobs',
-        # 'django-jobs',
-        # 'software-engineer-jobs',
-        # 'devops-jobs',
-        # 'aws-jobs',
-        # 'ibm-jobs',
-        # 'it-support-jobs',
-        # 'it-administrator-jobs',
-        # 'it-manager-jobs',
-        # 'it-consultant-jobs',
-        # 'software-developer-jobs',
-        # 'web-developer-jobs',
-        # 'front-end-developer-jobs',
-        # 'back-end-developer-jobs',
+        # 'full-stack-developer',
+        'vuejs',
+        # 'data-analyst',
+        # 'reactjs',
+        # 'python',
+        # 'laravel',
+        # 'django',
+        # 'software-engineer',
+        # 'devops',
+        # 'aws',
+        # 'ibm',
+        # 'it-support',
+        # 'it-administrator',
+        # 'it-manager',
+        # 'it-consultant',
+        # 'software-developer',
+        # 'web-developer',
+        # 'front-end-developer',
+        # 'back-end-developer',
     ]
     if logged_in_driver:
         for what in whats:
