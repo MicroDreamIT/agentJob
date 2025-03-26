@@ -3,6 +3,7 @@ import time
 import pyautogui
 
 from core.config import CHROME_DRIVER_PATH
+from job_sites.helpers.minimize_chrome import minimize_chrome
 
 job_sites = {
     1: 'seek',
@@ -14,12 +15,6 @@ from job_sites.seek.login import login_to_seek
 from job_sites.seek.search_jobs import search_jobs
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-
-def minimize_chrome():
-    # Command + M is the shortcut to minimize a window in macOS
-    pyautogui.hotkey('command', 'm')
-    print('minimize did not worked')
-    time.sleep(1)  # Wait a bit to ensure the command is processed
 
 if __name__ == "__main__":
     service = Service(CHROME_DRIVER_PATH)

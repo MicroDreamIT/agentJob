@@ -2,6 +2,8 @@
 import time
 
 from sqlalchemy.orm import Session
+
+from core.config import CHROME_DRIVER_PATH
 from core.database import Job, engine, FailedJob
 from job_sites.for_ai_process.process_cover_letter_openai import process_cover_letter_openai
 from job_sites.helpers.get_provider_link import get_provider_and_link
@@ -17,6 +19,9 @@ from job_sites.seek.get_job_description import get_job_description
 from job_sites.seek.is_seek import check_for_redirection
 from job_sites.seek.login import login_to_seek
 from sqlalchemy import select
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from job_sites.helpers.minimize_chrome import minimize_chrome
 
 if __name__ == "__main__":
     table_name = input("Enter the table name: 1. Job 2. FailedJob: ")
@@ -25,7 +30,9 @@ if __name__ == "__main__":
     else:
         table = FailedJob
 
-    logged_in_driver = login_to_seek()
+    service = Service(CHROME_DRIVER_PATH)
+    driver = webdriver.Chrome(service=service)
+    logged_in_driver = login_to_seek(driver)
     if logged_in_driver:
         session = Session(engine)
 

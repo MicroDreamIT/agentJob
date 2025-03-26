@@ -509,7 +509,8 @@ def get_openai_answers(questions):
     with input id or id for the input field as well.
     If the question is not found in the predefined answers or CV, then select at least 1 year value from the dropdown, or write n/a or 1.
     As you find in my CV I have 13 years of experience in project management, software development, and team leadership.
-    Anything about Security Clearance, select No. or write no
+    Anything about Security Clearance, select No. or write no.
+    Are you willing to work or relocate in any city and country for the job? is always 'Yes'. 
     Example output:
     {{
       "answers": [
@@ -519,8 +520,6 @@ def get_openai_answers(questions):
         {{"question": "Which of the following programming languages are you experienced in?", "answer": ["Python", "JavaScript", "C++"]}}
       ]
     }}
-    
-    Are you willing to work or relocate in any city and country for the job? is always Yes. 
     """
 
     response = OPENAI_CLIENT.chat.completions.create(
