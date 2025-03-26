@@ -28,7 +28,7 @@ def process_cover_letter_openai(job_details):
 
     Write a personalized, concise, and professional cover letter that highlights my skills and experience for this role.
     Use a simple, humble, unique and growth mindset approach of Dr Carol. Reflect eager to learn, contribute, share and grow.
-    If skills or experience are missing, mention how I can quickly learn and adapt.
+    If skills or experience are missing, mention that i have hands-on experience and I can quickly learn and adapt.
     Total characters must be less than 500, 150 words.
     
     

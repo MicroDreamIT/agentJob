@@ -1,3 +1,7 @@
+import time
+
+import pyautogui
+
 from core.config import CHROME_DRIVER_PATH
 
 job_sites = {
@@ -10,17 +14,12 @@ from job_sites.seek.login import login_to_seek
 from job_sites.seek.search_jobs import search_jobs
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-import threading
-import time
-import subprocess
 
-# ========== Helper: Minimize Chrome ==========
 def minimize_chrome():
-    try:
-        # Update the path to where your actual AppleScript file is saved
-        subprocess.run(['osascript', 'minimize_chrome.scpt'], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to minimize Chrome: {e}")
+    # Command + M is the shortcut to minimize a window in macOS
+    pyautogui.hotkey('command', 'm')
+    print('minimize did not worked')
+    time.sleep(1)  # Wait a bit to ensure the command is processed
 
 if __name__ == "__main__":
     service = Service(CHROME_DRIVER_PATH)
@@ -29,8 +28,8 @@ if __name__ == "__main__":
     whats = [
         # 'full-stack-developer',
         # 'vuejs',
-        'software-developer',
-        # 'python',
+        # 'software-developer',
+        'python',
         # 'django',
         # 'laravel',
         # 'software-engineer',
