@@ -457,12 +457,13 @@ def preset_test_data():
 
 def get_openai_answers(questions):
     predefined_answers = {
-        "Experience in full stack or frontend or backend software developer or engineer?": {"dropdown": "More than 5 years",
+        "Experience in full stack or frontend or applications or backend software developer or engineer?": {"dropdown": "More than 5 years",
                                                                               "text": "13 Years"},
         "Experience in Ruby in Rails Developer?": {"dropdown": "Less than 1 year",
                                                                                  "text": "1 Year"},
         "Experience in data scientist or data analyst or data science or data engineering?": {"dropdown": "3 year",
                                                                                  "text": "3 Year"},
+        "Experience in docker or kubernetes, CI/CD or AWS or GCP?": {"dropdown": "3 years", "text": "3 Year"},
         "Which of the following statements best describes your right to work in Australia?": {
             "dropdown": "I require sponsorship to work for a new employer (e.g. 482, 457)",
             "text": "I require sponsorship to work for a new employer (e.g. 482, 186)"},
@@ -482,8 +483,6 @@ def get_openai_answers(questions):
         "Experience do you have using SQL queries?": {"dropdown": "More than 5 years",
                                                                       "text": "13 Years"},
         "Are you willing, to work on client site 3 days per week in or to relocate": "Yes",
-        "Experience in applications developer?": {"dropdown": "More than 5 years",
-                                                                                 "text": "13 Years"},
         "Experience in .NET, or NodeJs or Java?": {"dropdown": "Less than 1 year",
                                                                         "text": "1 Year"},
         "Experience in agile environment?": {"dropdown": "More than 5 years",
