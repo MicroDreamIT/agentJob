@@ -82,6 +82,7 @@ if __name__ == "__main__":
                 try:
                     if table == Job:
                         fail_job.is_quick_apply = 1
+                        job_description = job_description
                     else:
                         session.delete(fail_job)
                     session.commit()
