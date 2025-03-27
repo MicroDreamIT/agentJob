@@ -6,7 +6,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
 from core.config import app_env
-from .apply_on_job import apply_on_job, apply_step_1_resume_cover_letter, apply_step_2_employer_questions
+from .apply_on_job import apply_on_job, apply_step_1_resume_cover_letter, apply_step_2_employer_questions, \
+    extract_job_details
 from core.database import Job, open_session, close_session
 
 def search_jobs(driver, what="full-stack-developer", days=1, failed_job=None):
@@ -74,9 +75,11 @@ def get_job_navigation_detail(driver, job, session):
 
 def process_job(session, driver, job_id, job_title, job_link):
     existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
+    job_text=''
     if not existing_job:
         print(f"➡️Processing job: {job_title}, job_id: {job_id}")
-        job_detail_returns = apply_on_job(driver, job_id, job_link)
+        job_text = extract_job_details(driver)
+        job_detail_returns = apply_on_job(driver, job_id, job_link, job_text)
         is_quick_apply_available = job_detail_returns[0]
         cover_letter = job_detail_returns[1]
         new_job = Job(
@@ -86,6 +89,7 @@ def process_job(session, driver, job_id, job_title, job_link):
             link=job_link,
             is_quick_apply=is_quick_apply_available,
             cover_letter=cover_letter,
+            job_description=job_text,
             applied_on=datetime.utcnow()
         )
         session.add(new_job)

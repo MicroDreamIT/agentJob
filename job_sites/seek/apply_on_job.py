@@ -91,7 +91,7 @@ def review_and_submit(driver):
     return True
 
 
-def apply_on_job(driver, job_id, job_link):
+def apply_on_job(driver, job_id, job_link, job_text):
     original_window = driver.current_window_handle
     wait = WebDriverWait(driver, 15)
     cover_letter = ''
@@ -105,7 +105,7 @@ def apply_on_job(driver, job_id, job_link):
         # Wait briefly to ensure DOM updates
         time.sleep(5)
 
-        job_text = extract_job_details(driver)
+
         cover_letter = process_cover_letter_openai(job_text)
 
         if job_text is None:

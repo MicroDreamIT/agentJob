@@ -36,6 +36,7 @@ class Job(Base):
     applied_on = Column(DateTime, default=None)  # Applied is now a DateTime, defaults to None
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     cover_letter = Column(Text, nullable=True)
+    job_description = Column(Text, nullable=True)
 
     __table_args__ = (UniqueConstraint('provider', 'provider_id', name='_provider_provider_id_uc'),)
 
