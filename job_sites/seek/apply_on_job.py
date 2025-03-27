@@ -282,42 +282,44 @@ def apply_step_2_employer_questions(driver):
     print("✅ Step 2 in inside...")
     questions = extract_questions_and_options(driver)
     print(f"🔍 Extracted questions: ", questions)
-    response = get_openai_answers(questions)
-    print(f"🔍 OpenAI Raw Response: {response}")
+    unanswered_questions = [q for q in questions if not q['selected']]
+    if unanswered_questions:
+        response = get_openai_answers(unanswered_questions)
+        print(f"🔍 OpenAI Raw Response: {response}")
 
-    answers = response["answers"]  # This should directly access the list of answer dictionaries
+        answers = response["answers"]  # This should directly access the list of answer dictionaries
 
-    for question_data in questions:
-        question_text = question_data['question']
-        input_id = question_data['input_id']
+        for question_data in questions:
+            question_text = question_data['question']
+            input_id = question_data['input_id']
 
-        # Retrieve the answer from OpenAI response matching this question
-        answer_info = next((item for item in answers if item['question'] == question_text), None)
-        if answer_info:
-            answer = answer_info['answer']
+            # Retrieve the answer from OpenAI response matching this question
+            answer_info = next((item for item in answers if item['question'] == question_text), None)
+            if answer_info:
+                answer = answer_info['answer']
 
-            # Process the question based on its type
-            input_field = driver.find_element(By.ID, input_id)
-            if question_data['input_type'] == 'select':
-                select = Select(input_field)
-                if select.first_selected_option.text.strip():
-                    print(f"Skipping '{question_text}' as it is already selected.")
-                else:
-                    select.select_by_visible_text(answer)
-                    print(f"Selected '{answer}' for '{question_text}'")
-            elif question_data['input_type'] == 'radio':
-                select_radio_option(driver, question_data, answer)
+                # Process the question based on its type
+                input_field = driver.find_element(By.ID, input_id)
+                if question_data['input_type'] == 'select':
+                    select = Select(input_field)
+                    if select.first_selected_option.text.strip():
+                        print(f"Skipping '{question_text}' as it is already selected.")
+                    else:
+                        select.select_by_visible_text(answer)
+                        print(f"Selected '{answer}' for '{question_text}'")
+                elif question_data['input_type'] == 'radio':
+                    select_radio_option(driver, question_data, answer)
 
-            elif question_data['input_type'] == 'textarea':
-                input_field.clear()
-                input_field.send_keys(answer)
-                print(f"Filled textarea for '{question_text}' with '{answer}'")
-            elif question_data['input_type'] == 'text':
-                input_field.clear()
-                input_field.send_keys(answer)
-                print(f"Filled textarea for '{question_text}' with '{answer}'")
-        else:
-            print(f"No answer provided for '{question_text}'")
+                elif question_data['input_type'] == 'textarea':
+                    input_field.clear()
+                    input_field.send_keys(answer)
+                    print(f"Filled textarea for '{question_text}' with '{answer}'")
+                elif question_data['input_type'] == 'text':
+                    input_field.clear()
+                    input_field.send_keys(answer)
+                    print(f"Filled textarea for '{question_text}' with '{answer}'")
+            else:
+                print(f"No answer provided for '{question_text}'")
 
     time.sleep(2)
     button = driver.find_element(By.CSS_SELECTOR, "button[data-testid='continue-button']")
@@ -372,6 +374,7 @@ def extract_questions_and_options(driver):
             try:
                 legend = fieldset.find_element(By.TAG_NAME, 'legend')
                 question_text = legend.text.strip() if legend else "No question text found"
+                selected = False
 
                 inputs = fieldset.find_elements(By.CSS_SELECTOR, 'input[type="radio"], input[type="checkbox"]')
                 options = []
@@ -388,6 +391,8 @@ def extract_questions_and_options(driver):
                         'id': input_elem.get_attribute('id'),
                         'type': input_elem.get_attribute('type')
                     })
+                    if input_elem.is_selected():
+                        selected = True
 
                 questions.append({
                     'question': question_text,
@@ -395,6 +400,7 @@ def extract_questions_and_options(driver):
                     'input_type': inputs[0].get_attribute('type') if inputs else 'unknown',
                     'fieldset_id': fieldset.get_attribute('id'),
                     'input_id': fieldset.get_attribute('id'),
+                    'selected': selected
                 })
             except NoSuchElementException as e:
                 print(f"⚠️ Error processing fieldset: {e}")
@@ -408,11 +414,12 @@ def extract_questions_and_options(driver):
             label = wait.until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, f'label[for="{input_elem.get_attribute("id")}"]')))
             question_text = label.text.strip() if label else "No label found"
-
+            selected = False
             if input_elem.tag_name == 'select':
                 select_obj = Select(input_elem)
                 options = [{'value': opt.get_attribute('value'), 'label': opt.text} for opt in select_obj.options]
                 input_type = 'select'
+                selected = select_obj.first_selected_option.get_attribute('value') != ''
             elif input_elem.tag_name == 'textarea':
                 options = []
                 input_type = 'textarea'
@@ -425,7 +432,8 @@ def extract_questions_and_options(driver):
                 'options': options,
                 'input_type': input_type,
                 'input_id': input_elem.get_attribute('id'),
-                'name': input_elem.get_attribute('name')
+                'name': input_elem.get_attribute('name'),
+                'selected': selected
             })
         except NoSuchElementException as e:
             print(f"Error processing input: {e}")
