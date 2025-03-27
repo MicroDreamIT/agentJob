@@ -28,7 +28,7 @@ if __name__ == "__main__":
         # 'django',
         # 'laravel',
         # 'web-developer',
-        'software-engineer',
+        # 'software-engineer',
         'front-end-developer',
         'back-end-developer',
         # 'reactjs',

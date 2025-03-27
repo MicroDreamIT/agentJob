@@ -75,7 +75,6 @@ def get_job_navigation_detail(driver, job, session):
 
 def process_job(session, driver, job_id, job_title, job_link):
     existing_job = session.query(Job).filter_by(provider='SEEK', provider_id=job_id).first()
-    job_text=''
     if not existing_job:
         print(f"➡️Processing job: {job_title}, job_id: {job_id}")
         job_text = extract_job_details(driver)
