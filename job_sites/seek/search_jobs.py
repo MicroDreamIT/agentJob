@@ -78,6 +78,7 @@ def process_job(session, driver, job_id, job_title, job_link):
     if not existing_job:
         print(f"➡️Processing job: {job_title}, job_id: {job_id}")
         job_text = extract_job_details(driver)
+        # print('job description: ', job_text)
         job_detail_returns = apply_on_job(driver, job_id, job_link, job_text)
         is_quick_apply_available = job_detail_returns[0]
         cover_letter = job_detail_returns[1]
