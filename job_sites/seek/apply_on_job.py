@@ -517,7 +517,8 @@ def get_openai_answers(questions):
     If the question is not found in the predefined answers or CV, then select at least 1 year value from the dropdown, or write n/a or 1.
     As you find in my CV I have 13 years of experience in project management, software development, and team leadership.
     Anything about Security Clearance, select No. or write no.
-    Are you willing to work or relocate in any city and country for the job? is always 'Yes'. 
+    Are you willing to work or relocate in any city and country for the job? is always 'Yes'.
+    Any creative question asked, but you can not find it, please analysis and learn my CV and pick the right answer.
     Example output:
     {{
       "answers": [

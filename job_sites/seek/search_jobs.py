@@ -4,6 +4,7 @@ from selenium.common import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from sqlalchemy import false
 
 from core.config import app_env
 from .apply_on_job import apply_on_job, apply_step_1_resume_cover_letter, apply_step_2_employer_questions, \

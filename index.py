@@ -21,7 +21,7 @@ if __name__ == "__main__":
     driver = webdriver.Chrome(service=service)
     logged_in_driver = login_to_seek(driver)
     whats = [
-        # 'full-stack-developer',
+        'full-stack-developer',
         # 'vuejs',
         # 'software-developer',
         # 'python',
@@ -32,20 +32,17 @@ if __name__ == "__main__":
         # 'front-end-developer',
         # 'back-end-developer',
         # 'devops',
-        'reactjs',
-        'aws',
+        # 'reactjs',
+        # 'aws',
         # 'ibm',
-        # 'it-support',
         # 'it-administrator',
-        # 'it-manager',
+        # 'it-support',
+        #  'it-manager',
         # 'it-consultant',
         # 'data-analyst',
     ]
-    minimize_chrome()
     if logged_in_driver:
         for what in whats:
-
             # logged_in_driver.minimize_window()
             search_jobs(logged_in_driver, what=what, days=3)
-            minimize_chrome()
     driver.quit()
